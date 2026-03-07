@@ -1,0 +1,62 @@
+[
+    {
+        "name": "cycleTime",
+        "description": "Tiempo de Ciclo en segundos",
+        "modbusType": "inputRegister",
+        "modbusAddress": 0,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "s",
+        "readable": true,
+        "writable": false,
+        "type": "kpis"
+    },
+    {
+        "name": "productionCount",
+        "description": "Producción en unidades",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 1,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "unidades",
+        "readable": true,
+        "writable": false,
+        "type": "kpis"
+    },
+    {
+        "name": "qualityYield",
+        "description": "Rendimiento de Calidad en porcentaje",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 2,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "%",
+        "readable": true,
+        "writable": false,
+        "type": "kpis"
+    },
+    {
+        "name": "operationMode",
+        "description": "Modo de operación (1: manual, 2: automático)",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 10,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "",
+        "readable": true,
+        "writable": true,
+        "type": "operation_mode"
+    },
+    {
+        "name": "cycleCommand",
+        "description": "Comando de ciclo (1: start, 0: stop)",
+        "modbusType": "coil",
+        "modbusAddress": 11,
+        "opcuaDataType": "Boolean",
+        "scaleFactor": 1,
+        "unit": "",
+        "readable": true,
+        "writable": true,
+        "type": "cycle_command"
+    }
+]
