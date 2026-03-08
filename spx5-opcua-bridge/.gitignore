@@ -1,0 +1,34 @@
+# Node
+node_modules/
+.env
+*.log
+
+# Build
+/dist/
+/build/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp
+*.swo
+
+# Logs
+logs/
+
+# npm
+package-lock.json
+yarn.lock
+
+# Others
+*.bak
+*.tmp
+
+# Ignore test outputs
+src/tests/*.js
+src/tests/*.log
