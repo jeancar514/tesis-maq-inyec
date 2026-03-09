@@ -47,13 +47,6 @@ export const ZoneCard: React.FC<ZoneCardProps> = ({
                         </div>
                     </div>
 
-                    <div>
-                        <div className="flex justify-between mb-1.5 items-center">
-                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Salida SSR</label>
-                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">{ssr}%</span>
-                        </div>
-                    </div>
-
                     <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/50">
                         <div>
                             <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1 block">Tol. Sup.</label>

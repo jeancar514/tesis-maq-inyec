@@ -42,7 +42,7 @@ class ApiServer {
 
         this.app.get(ROUTES.KPIS, (req, res) => {
             try {
-                const kpiRegisters = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.KPIS);
+                const kpiRegisters = registerManager.getAll().filter(reg => [REGISTER_TYPES.KPIS,REGISTER_TYPES.CYCLE_COMMAND,REGISTER_TYPES.OPERATION_MODE].includes(reg.type));
                 const kpiValues = {};
                 kpiRegisters.forEach(reg => {
                     kpiValues[reg.name] = opcuaServer._getCachedValue(reg);
@@ -143,15 +143,6 @@ class ApiServer {
         }
     }
 
-    async stop() {
-        if (this.wss) {
-            this.wss.close();
-        }
-        if (this.server) {
-            return new Promise(resolve => this.server.close(resolve));
-        }
-    }
-
     broadcastKpisUpdate() {
         const kpiRegisters = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.KPIS);
         const kpiValues = {};
@@ -163,6 +154,15 @@ class ApiServer {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(message);
             }
+        }
+    }
+
+    async stop() {
+        if (this.wss) {
+            this.wss.close();
+        }
+        if (this.server) {
+            return new Promise(resolve => this.server.close(resolve));
         }
     }
 }

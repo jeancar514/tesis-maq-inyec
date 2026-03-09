@@ -10,7 +10,7 @@ export const PIDDiagnosticPage: React.FC = () => {
             <div className="shrink-0">
                 <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 uppercase tracking-tight flex items-center gap-2">
                     <span className="text-primary material-icons">analytics</span>
-                    Diagnóstico PID de Calentamiento
+                    Diagnóstico de control de temperatura
                 </h1>
                 <p className="text-xs text-slate-500 font-medium">Análisis de estabilidad térmica y sintonización de lazos de control por zona</p>
             </div>
@@ -33,7 +33,7 @@ export const PIDDiagnosticPage: React.FC = () => {
             {/* Main Content Area */}
             <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm">
-                    <PIDChart />
+                    {/* <PIDChart /> */}
                 </div>
             </div>
 

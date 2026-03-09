@@ -14,12 +14,12 @@ export const InjectionGraphs: React.FC = () => {
             <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Graphs Column: Should scroll internally if graphs are too tall */}
                 <div className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900">
-                    <PressureGraph />
-                    <VelocityGraph />
+                    {/* <PressureGraph />
+                    <VelocityGraph /> */}
                 </div>
 
                 {/* Sidebar Column: Fixed width, scrolls internally */}
-                <AnalysisSidebar />
+                {/* <AnalysisSidebar /> */}
             </div>
         </div>
     );
