@@ -7,6 +7,7 @@ import { ServoData } from '../../../../domain/models/servo.model';
 const servoRepository = new ServoRepository();
 const getServoDataUseCase = new GetServoDataUseCase(servoRepository);
 
+
 const ServoCard: React.FC<{
     label: string;
     icon: string;
@@ -50,7 +51,14 @@ export const ServoVariableGrid: React.FC = () => {
         );
     }
 
-    const data = servoData || { speed: 0, torque: 0, position: 0, current: 0, voltage: 0 };
+    const raw = servoData || { speed: 0, torque: 0, position: 0, current: 0, voltage: 0 };
+    const data = {
+        speed:    parseFloat((raw.speed * 0.1).toFixed(2)),
+        torque:   parseFloat(((raw.torque * 0.1)*(3.8/100)).toFixed(2)),
+        position: parseFloat(((raw.position / 100000)).toFixed(2)),
+        current:  parseFloat(((raw.current * 0.01)).toFixed(2)),
+        voltage:  parseFloat(((raw.current / 10)).toFixed(2)),
+    };
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -62,12 +70,12 @@ export const ServoVariableGrid: React.FC = () => {
             <ServoCard
                 label="Torque"
                 icon="rotate_right"
-                value={<>{data.torque}<span className="text-sm font-medium text-slate-400 ml-1">Nm</span></>}
+                value={<>{data.torque}<span className="text-sm font-medium text-slate-400 ml-1">KNm</span></>}
             />
             <ServoCard
                 label="Posición"
                 icon="my_location"
-                value={<>{data.position}<span className="text-sm font-medium text-slate-400 ml-1">°</span></>}
+                value={<>{data.position}<span className="text-sm font-medium text-slate-400 ml-1">rev</span></>}
             />
             <ServoCard
                 label="Corriente"
