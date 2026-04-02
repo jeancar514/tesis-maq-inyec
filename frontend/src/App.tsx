@@ -8,12 +8,12 @@ import { OpeningProfilePage } from './presentation/features/clamp/pages/OpeningP
 import { InjectionProfilePage } from './presentation/features/injection/pages/InjectionProfilePage';
 import { HoldingPage } from './presentation/features/injection/pages/HoldingPage';
 import { InjectionGraphsPage } from './presentation/features/injection/pages/InjectionGraphsPage';
-// import { DosingPage } from './presentation/features/injection/pages/DosingPage';
 import { EjectionProfilePage } from './presentation/features/ejection/pages/EjectionProfilePage';
 import { HeatingZonesPage } from './presentation/features/heating/pages/HeatingZonesPage';
 import { PIDDiagnosticPage } from './presentation/features/heating/pages/PIDDiagnosticPage';
 import { IOMonitorPage } from './presentation/features/maintenance/pages/IOMonitorPage';
 import { AlarmHistoryPage } from './presentation/features/maintenance/pages/AlarmHistoryPage';
+import { ServoMonitorPage } from './presentation/features/dashboard/pages/ServoMonitorPage';
 
 const App: React.FC = () => {
     return (
@@ -26,6 +26,7 @@ const App: React.FC = () => {
                         <Route index element={<DashboardPage />} />
                         <Route path="step-cycle" element={<StepCyclePage />} />
                         <Route path="time-monitor" element={<TimeMonitorPage />} />
+                        <Route path="servo-monitor" element={<ServoMonitorPage />} />
                     </Route>
 
                     <Route path="clamp">

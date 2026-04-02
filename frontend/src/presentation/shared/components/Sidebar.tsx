@@ -31,6 +31,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
             { label: 'Vista General', icon: 'grid_view', to: '/dashboard' },
             { label: 'Ciclo de Pasos', icon: 'account_tree', to: '/dashboard/step-cycle' },
             { label: 'Monitor de Tiempo', icon: 'schedule', to: '/dashboard/time-monitor' },
+            { label: 'Servomotor', icon: 'precision_manufacturing', to: '/dashboard/servo-monitor' },
         ]
     },
     'clamp': {

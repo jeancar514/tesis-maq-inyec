@@ -54,6 +54,20 @@ class ApiServer {
             }
         });
 
+        this.app.get(ROUTES.SERVO, (req, res) => {
+            try {
+                const servoRegisters = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.SERVO);
+                const servoValues = {};
+                servoRegisters.forEach(reg => {
+                    servoValues[reg.name] = opcuaServer._getCachedValue(reg);
+                });
+
+                res.json(servoValues);
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+
         this.app.post(ROUTES.OPERATION_MODE, async (req, res) => {
             const { mode } = req.body; // 1: manual, 2: automático
             const reg = registerManager.getAll().find(r => r.type === REGISTER_TYPES.OPERATION_MODE);

@@ -58,5 +58,65 @@
         "readable": true,
         "writable": true,
         "type": "cycle_command"
+    },
+    {
+        "name": "speed",
+        "description": "Lectura de Velocidad del Servo",
+        "modbusType": "inputRegister",
+        "modbusAddress": 18,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "RPM",
+        "readable": true,
+        "writable": false,
+        "type": "servo"
+    },
+    {
+        "name": "torque",
+        "description": "Lectura de Torque del Servo",
+        "modbusType": "inputRegister",
+        "modbusAddress": 28,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "Nm",
+        "readable": true,
+        "writable": false,
+        "type": "servo"
+    },
+    {
+        "name": "position",
+        "description": "Posición del Servo",
+        "modbusType": "inputRegister",
+        "modbusAddress": 38,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "°",
+        "readable": true,
+        "writable": false,
+        "type": "servo"
+    },
+    {
+        "name": "current",
+        "description": "Corriente del Servo",
+        "modbusType": "inputRegister",
+        "modbusAddress": 48,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "A",
+        "readable": true,
+        "writable": false,
+        "type": "servo"
+    },
+    {
+        "name": "voltage",
+        "description": "Voltaje del Servo",
+        "modbusType": "inputRegister",
+        "modbusAddress": 58,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "V",
+        "readable": true,
+        "writable": false,
+        "type": "servo"
     }
 ]
