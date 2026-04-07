@@ -2,6 +2,7 @@ import { ServoGateway } from '../../domain/gateway/servo.gateway';
 import { ServoData } from '../../domain/models/servo.model';
 import { httpService } from '../helpers/http-service';
 import { environment } from '../../environments/environment';
+import { servoWebSocketService } from '../helpers/servo-websocket.service';
 
 export class ServoRepository implements ServoGateway {
     async getServoData(): Promise<ServoData> {
@@ -9,17 +10,15 @@ export class ServoRepository implements ServoGateway {
         return await httpService.get<ServoData>(url);
     }
 
-    // Stubs para futura integración WebSocket
     subscribeToServoData(callback: (data: ServoData) => void): () => void {
-        // TODO: implementar cuando se agregue WebSocket
-        return () => {};
+        return servoWebSocketService.subscribe(callback);
     }
 
     connectWebSocket(): void {
-        // TODO: implementar
+        servoWebSocketService.connect();
     }
 
     disconnectWebSocket(): void {
-        // TODO: implementar
+        servoWebSocketService.disconnect();
     }
 }

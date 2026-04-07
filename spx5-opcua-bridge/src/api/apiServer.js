@@ -15,8 +15,11 @@ class ApiServer {
     constructor() {
         this.app = express();
         this.server = null;
-        this.wss = null;
+        this.wssMain = null;
         this.kpiClients = new Set();
+        this.servoClients = new Set();
+        this.operationModeClients = new Set();
+        this.cycleCommandClients = new Set();
         this.app.use(cors());
         this.app.use(express.json());
         this._setupSwagger();
@@ -112,27 +115,41 @@ class ApiServer {
             });
             this.server.on('error', reject);
 
-            // WebSocket server para KPIS
-            this.wss = new WebSocket.Server({ server: this.server, path: '/ws/kpis' });
-            this.wss.on('connection', ws => {
-                this.kpiClients.add(ws);
-                ws.on('close', () => this.kpiClients.delete(ws));
-            });
+            // Un solo WS server sin path — routing manual por URL
+            this.wssMain = new WebSocket.Server({ noServer: true });
 
-            // WebSocket para modo de operación
-            this.wssOperationMode = new WebSocket.Server({ server: this.server, path: '/ws/operation-mode' });
-            this.operationModeClients = new Set();
-            this.wssOperationMode.on('connection', ws => {
-                this.operationModeClients.add(ws);
-                ws.on('close', () => this.operationModeClients.delete(ws));
-            });
+            this.server.on('upgrade', (request, socket, head) => {
+                const url = request.url;
+                logger.info(`WS upgrade request: ${url}`);
+                this.wssMain.handleUpgrade(request, socket, head, (ws) => {
+                    if (url === '/ws/kpis') {
+                        this.kpiClients.add(ws);
+                        const kpiRegs = registerManager.getAll().filter(r => [REGISTER_TYPES.KPIS, REGISTER_TYPES.CYCLE_COMMAND, REGISTER_TYPES.OPERATION_MODE].includes(r.type));
+                        const vals = {};
+                        kpiRegs.forEach(r => { vals[r.name] = opcuaServer._getCachedValue(r); });
+                        ws.send(JSON.stringify({ kpis: vals }));
+                        ws.on('close', () => this.kpiClients.delete(ws));
 
-            // WebSocket para comandos de ciclo
-            this.wssCycleCommand = new WebSocket.Server({ server: this.server, path: '/ws/cycle-command' });
-            this.cycleCommandClients = new Set();
-            this.wssCycleCommand.on('connection', ws => {
-                this.cycleCommandClients.add(ws);
-                ws.on('close', () => this.cycleCommandClients.delete(ws));
+                    } else if (url === '/ws/servo') {
+                        this.servoClients.add(ws);
+                        const servoRegs = registerManager.getAll().filter(r => r.type === REGISTER_TYPES.SERVO);
+                        const vals = {};
+                        servoRegs.forEach(r => { vals[r.name] = opcuaServer._getCachedValue(r); });
+                        ws.send(JSON.stringify({ servo: vals }));
+                        ws.on('close', () => this.servoClients.delete(ws));
+
+                    } else if (url === '/ws/operation-mode') {
+                        this.operationModeClients.add(ws);
+                        ws.on('close', () => this.operationModeClients.delete(ws));
+
+                    } else if (url === '/ws/cycle-command') {
+                        this.cycleCommandClients.add(ws);
+                        ws.on('close', () => this.cycleCommandClients.delete(ws));
+
+                    } else {
+                        socket.destroy();
+                    }
+                });
             });
         });
     }
@@ -171,10 +188,23 @@ class ApiServer {
         }
     }
 
-    async stop() {
-        if (this.wss) {
-            this.wss.close();
+    broadcastServoUpdate() {
+        if (!this.servoClients) return;
+        const servoRegisters = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.SERVO);
+        const servoValues = {};
+        servoRegisters.forEach(reg => {
+            servoValues[reg.name] = opcuaServer._getCachedValue(reg);
+        });
+        const message = JSON.stringify({ servo: servoValues });
+        for (const ws of this.servoClients) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+            }
         }
+    }
+
+    async stop() {
+        if (this.wssMain) this.wssMain.close();
         if (this.server) {
             return new Promise(resolve => this.server.close(resolve));
         }

@@ -72,7 +72,6 @@ class ModbusClient extends EventEmitter {
     }
 
     async readByConfig(registerConfig) {
-        console.log("registerConfig")
         this._checkConnection();
         const { modbusType, modbusAddress, scaleFactor } = registerConfig;
 

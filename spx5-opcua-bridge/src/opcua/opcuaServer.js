@@ -123,18 +123,41 @@ class OPCUABridgeServer {
         if (fromPolling && this._isWriteProtected(name)) {
             return;
         }
+        const prev = this._valueCache.get(name);
         this._valueCache.set(name, value);
-        // Notificar KPIS por WebSocket si es un KPI
+
+        // Solo guardar en DB si hubo cambio real
+        const changed = prev !== value;
+
         try {
-            const registerManager = require('../utils/registerManager');
             const { REGISTER_TYPES } = require('../api/constant');
             const ApiServer = require('../api/apiServer');
             const reg = registerManager.getByName(name);
-            if (reg && reg.type === REGISTER_TYPES.KPIS && ApiServer.broadcastKpisUpdate) {
-                ApiServer.broadcastKpisUpdate();
+            if (!reg) return;
+
+            // Broadcast siempre (el front necesita recibir el estado actual)
+            switch (reg.type) {
+                case REGISTER_TYPES.KPIS:
+                    ApiServer.broadcastKpisUpdate?.();
+                    break;
+                case REGISTER_TYPES.SERVO:
+                    ApiServer.broadcastServoUpdate?.();
+                    break;
+                case REGISTER_TYPES.OPERATION_MODE:
+                    ApiServer.broadcastOperationModeUpdate?.(value);
+                    break;
+                case REGISTER_TYPES.CYCLE_COMMAND:
+                    ApiServer.broadcastCycleCommandUpdate?.(value ? 'start' : 'stop');
+                    break;
+            }
+
+            // DB solo si cambió
+            if (changed) {
+                const { saveOnChange } = require('../db/lecturaWatcher');
+                saveOnChange();
             }
         } catch (e) {
-            // Ignorar errores de notificación
+            logger.error(`updateCachedValue broadcast error [${name}]: ${e.message}`);
         }
     }
     markAsWritten(name) {

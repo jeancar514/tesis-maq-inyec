@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { GetServoDataUseCase } from '../../../../domain/usecase/get-servo-data.usecase';
 import { ServoRepository } from '../../../../infrastructure/repository/servo.repository';
+import { GetServoDataUseCase } from '../../../../domain/usecase/get-servo-data.usecase';
+import { servoWebSocketService } from '../../../../infrastructure/helpers/servo-websocket.service';
 import { ServoData } from '../../../../domain/models/servo.model';
 
-// Inicializamos el Repositorio y el Caso de Uso (mismo patrón que KPIGrid)
 const servoRepository = new ServoRepository();
 const getServoDataUseCase = new GetServoDataUseCase(servoRepository);
 
+// Escala los valores raw del servo aplicando un factor de 0.1
+const scaleServo = (value: number): number => parseFloat((value * 0.1).toFixed(2));
 
 const ServoCard: React.FC<{
     label: string;
@@ -29,17 +31,22 @@ export const ServoVariableGrid: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await getServoDataUseCase.execute();
-                setServoData(data);
-            } catch (error) {
-                console.error("Error al obtener datos del servo:", error);
-            } finally {
-                setLoading(false);
-            }
+        // Carga inicial por HTTP
+        getServoDataUseCase.execute()
+            .then(setServoData)
+            .catch(err => console.error('Error cargando servo:', err))
+            .finally(() => setLoading(false));
+
+        // Suscripción WebSocket — singleton directo para evitar instancias duplicadas
+        servoWebSocketService.connect();
+        const unsubscribe = servoWebSocketService.subscribe((data) => {
+            setServoData(data);
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribe();
         };
-        fetchData();
     }, []);
 
     if (loading) {
@@ -53,11 +60,11 @@ export const ServoVariableGrid: React.FC = () => {
 
     const raw = servoData || { speed: 0, torque: 0, position: 0, current: 0, voltage: 0 };
     const data = {
-        speed:    parseFloat((raw.speed * 0.1).toFixed(2)),
-        torque:   parseFloat(((raw.torque * 0.1)*(3.8/100)).toFixed(2)),
-        position: parseFloat(((raw.position / 100000)).toFixed(2)),
-        current:  parseFloat(((raw.current * 0.01)).toFixed(2)),
-        voltage:  parseFloat(((raw.current / 10)).toFixed(2)),
+        speed:    scaleServo(raw.speed),
+        torque:   scaleServo(raw.torque),
+        position: scaleServo(raw.position),
+        current:  scaleServo(raw.current),
+        voltage:  scaleServo(raw.voltage),
     };
 
     return (
@@ -70,12 +77,12 @@ export const ServoVariableGrid: React.FC = () => {
             <ServoCard
                 label="Torque"
                 icon="rotate_right"
-                value={<>{data.torque}<span className="text-sm font-medium text-slate-400 ml-1">KNm</span></>}
+                value={<>{data.torque}<span className="text-sm font-medium text-slate-400 ml-1">Nm</span></>}
             />
             <ServoCard
                 label="Posición"
                 icon="my_location"
-                value={<>{data.position}<span className="text-sm font-medium text-slate-400 ml-1">rev</span></>}
+                value={<>{data.position}<span className="text-sm font-medium text-slate-400 ml-1">°</span></>}
             />
             <ServoCard
                 label="Corriente"

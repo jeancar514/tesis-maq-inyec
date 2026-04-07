@@ -4,6 +4,8 @@ const opcuaServer = require('../opcua/opcuaServer');
 const apiServer = require('../api/apiServer');
 const registerManager = require('../utils/registerManager');
 const logger = require('../utils/logger');
+const { initTable } = require('../db/dbClient');
+const { startWatching } = require('../db/lecturaWatcher');
 
 class ProtocolBridge {
     constructor() {
@@ -14,8 +16,19 @@ class ProtocolBridge {
     async start() {
         logger.info('Starting SPX5 OPC UA Bridge...');
         try {
+            // Inicializar DB primero (independiente de Modbus/OPC UA)
+            await initTable(registerManager.getAll());
+            startWatching();
+
             await opcuaServer.initialize();
-            await modbusClient.connect();
+
+            // Modbus no es crítico para el API — si falla, el servidor sigue corriendo
+            try {
+                await modbusClient.connect();
+            } catch (modbusErr) {
+                logger.warn(`Modbus no disponible al arrancar: ${modbusErr.message} — reintentando en background`);
+            }
+
             await opcuaServer.start();
             await apiServer.start();
 
