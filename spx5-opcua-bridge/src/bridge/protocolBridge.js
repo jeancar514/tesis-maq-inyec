@@ -21,18 +21,7 @@ class ProtocolBridge {
             startWatching();
 
             await opcuaServer.initialize();
-<<<<<<< Updated upstream
-
-            // Modbus no es crítico para el API — si falla, el servidor sigue corriendo
-            try {
-                await modbusClient.connect();
-            } catch (modbusErr) {
-                logger.warn(`Modbus no disponible al arrancar: ${modbusErr.message} — reintentando en background`);
-            }
-
-=======
             await mqttClient.connect();
->>>>>>> Stashed changes
             await opcuaServer.start();
             await apiServer.start();
 

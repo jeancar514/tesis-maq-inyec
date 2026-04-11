@@ -14709,3 +14709,7 @@
 [2026-04-07 11:59:04] INFO: Bridge started successfully
 [2026-04-07 11:59:06] INFO: Lectura guardada en DB
 [2026-04-07 12:00:08] INFO: Lectura guardada en DB
+[2026-04-11 11:45:01] INFO: Loaded 10 registers from C:\Users\Carlos Vicuña\Downloads\tesis-maq-inyec\spx5-opcua-bridge\config\registers.json
+[2026-04-11 11:45:09] INFO: Starting SPX5 OPC UA Bridge (MQTT)...
+[2026-04-11 11:45:15] INFO: Loaded 10 registers from C:\Users\Carlos Vicuña\Downloads\tesis-maq-inyec\spx5-opcua-bridge\config\registers.json
+[2026-04-11 11:45:15] INFO: Starting SPX5 OPC UA Bridge (MQTT)...
