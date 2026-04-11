@@ -13,6 +13,18 @@ module.exports = {
         maxRetries: 5
     },
 
+    // CONFIGURACIÓN MQTT
+    mqtt: {
+        host: process.env.MQTT_HOST || 'localhost',
+        port: parseInt(process.env.MQTT_PORT) || 1883,
+        username: process.env.MQTT_USERNAME || '',
+        password: process.env.MQTT_PASSWORD || '',
+        baseTopic: process.env.MQTT_BASE_TOPIC || 'spx5',
+        timeout: 5000,
+        retryInterval: 3000,
+        maxRetries: 5
+    },
+
     // CONFIGURACIÓN DE LA API REST
     api: {
         port: parseInt(process.env.API_PORT) || 3000

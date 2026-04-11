@@ -3,7 +3,7 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const config = require('../../config/config');
-const modbusClient = require('../modbus/modbusClient');
+const mqttClient = require('../mqtt/mqttClient');
 const opcuaServer = require('../opcua/opcuaServer');
 const registerManager = require('../utils/registerManager');
 const logger = require('../utils/logger');
@@ -78,7 +78,7 @@ class ApiServer {
             if (!reg.writable) return res.status(403).json({ error: 'Operation mode is read-only' });
             if (![1, 2].includes(mode)) return res.status(400).json({ error: 'Invalid mode' });
             try {
-                await modbusClient.writeByConfig(reg, mode);
+                await mqttClient.writeByConfig(reg, mode);
                 opcuaServer.updateCachedValue(reg.name, mode);
                 opcuaServer.markAsWritten(reg.name);
                 this.broadcastOperationModeUpdate(mode);
@@ -96,7 +96,7 @@ class ApiServer {
             if (!['start', 'stop'].includes(command)) return res.status(400).json({ error: 'Invalid command' });
             const value = command === 'start' ? 1 : 0;
             try {
-                await modbusClient.writeByConfig(reg, value);
+                await mqttClient.writeByConfig(reg, value);
                 opcuaServer.updateCachedValue(reg.name, value);
                 opcuaServer.markAsWritten(reg.name);
                 this.broadcastCycleCommandUpdate(command);

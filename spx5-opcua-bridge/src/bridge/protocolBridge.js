@@ -1,5 +1,5 @@
 const config = require('../../config/config');
-const modbusClient = require('../modbus/modbusClient');
+const mqttClient = require('../mqtt/mqttClient');
 const opcuaServer = require('../opcua/opcuaServer');
 const apiServer = require('../api/apiServer');
 const registerManager = require('../utils/registerManager');
@@ -14,13 +14,14 @@ class ProtocolBridge {
     }
 
     async start() {
-        logger.info('Starting SPX5 OPC UA Bridge...');
+        logger.info('Starting SPX5 OPC UA Bridge (MQTT)...');
         try {
             // Inicializar DB primero (independiente de Modbus/OPC UA)
             await initTable(registerManager.getAll());
             startWatching();
 
             await opcuaServer.initialize();
+<<<<<<< Updated upstream
 
             // Modbus no es crítico para el API — si falla, el servidor sigue corriendo
             try {
@@ -29,6 +30,9 @@ class ProtocolBridge {
                 logger.warn(`Modbus no disponible al arrancar: ${modbusErr.message} — reintentando en background`);
             }
 
+=======
+            await mqttClient.connect();
+>>>>>>> Stashed changes
             await opcuaServer.start();
             await apiServer.start();
 
@@ -54,26 +58,29 @@ class ProtocolBridge {
     }
 
     async _pollAllRegisters() {
-        if (!modbusClient.isConnected) return;
+        if (!mqttClient.isConnected) return;
 
         const registers = registerManager.getAll();
         for (const reg of registers) {
             if (!reg.readable) continue;
 
             try {
-                const value = await modbusClient.readByConfig(reg);
+                const value = await mqttClient.readByConfig(reg);
                 opcuaServer.updateCachedValue(reg.name, value, true);
             } catch (error) {
-                logger.warn(`Error polling ${reg.name}: ${error.message}`);
+                // Silenciar "No MQTT data received yet" ya que es normal al inicio
+                if (!error.message.includes('No MQTT data')) {
+                    logger.warn(`Error polling ${reg.name}: ${error.message}`);
+                }
             }
         }
     }
 
     _setupEventHandlers() {
-        modbusClient.on('connected', () => logger.info('Modbus reconnected'));
-        modbusClient.on('disconnected', () => logger.warn('Modbus disconnected'));
-        modbusClient.on('error', (err) => logger.error(`Modbus error: ${err.message}`));
-        modbusClient.on('maxRetriesReached', () => logger.error('Modbus max retries reached'));
+        mqttClient.on('connected', () => logger.info('MQTT reconnected'));
+        mqttClient.on('disconnected', () => logger.warn('MQTT disconnected'));
+        mqttClient.on('error', (err) => logger.error(`MQTT error: ${err.message}`));
+        mqttClient.on('maxRetriesReached', () => logger.error('MQTT max retries reached'));
 
         process.on('SIGINT', () => this.stop());
         process.on('SIGTERM', () => this.stop());
@@ -86,7 +93,7 @@ class ProtocolBridge {
             this.pollingInterval = null;
         }
 
-        await modbusClient.disconnect();
+        await mqttClient.disconnect();
         await opcuaServer.stop();
         await apiServer.stop();
 

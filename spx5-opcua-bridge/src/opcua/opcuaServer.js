@@ -8,7 +8,7 @@ const {
 } = require('node-opcua');
 
 const config = require('../../config/config');
-const modbusClient = require('../modbus/modbusClient');
+const mqttClient = require('../mqtt/mqttClient');
 const registerManager = require('../utils/registerManager');
 const logger = require('../utils/logger');
 
@@ -87,7 +87,7 @@ class OPCUABridgeServer {
     }
 
     _handleSetter(reg, variant) {
-        if (!modbusClient.isConnected) return StatusCodes.BadNotConnected;
+        if (!mqttClient.isConnected) return StatusCodes.BadNotConnected;
 
         const value = variant.value;
         if (reg.minValue !== undefined && value < reg.minValue) return StatusCodes.BadOutOfRange;
@@ -95,7 +95,7 @@ class OPCUABridgeServer {
 
         setImmediate(async () => {
             try {
-                await modbusClient.writeByConfig(reg, value);
+                await mqttClient.writeByConfig(reg, value);
                 this.updateCachedValue(reg.name, value);
                 this.markAsWritten(reg.name);
             } catch (err) {
@@ -109,9 +109,9 @@ class OPCUABridgeServer {
         this.namespace.addVariable({
             componentOf: parent,
             nodeId: 's=ModbusConnectionStatus',
-            browseName: 'ModbusConnectionStatus',
+            browseName: 'BrokerConnectionStatus',
             dataType: DataType.Boolean,
-            value: { get: () => new Variant({ dataType: DataType.Boolean, value: modbusClient.isConnected }) }
+            value: { get: () => new Variant({ dataType: DataType.Boolean, value: mqttClient.isConnected }) }
         });
     }
 
