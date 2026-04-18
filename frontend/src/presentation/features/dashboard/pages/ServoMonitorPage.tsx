@@ -1,5 +1,5 @@
 import React from 'react';
-import { ServoVariableGrid } from '../components/ServoVariableGrid';
+import { ServoVariableGrid } from '../../injection/components/ServoVariableGrid';
 
 export const ServoMonitorPage: React.FC = () => {
     return (

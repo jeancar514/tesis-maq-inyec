@@ -59,6 +59,7 @@
         "writable": true,
         "type": "cycle_command"
     },
+    
     {
         "name": "speed",
         "description": "Lectura de Velocidad del Servo",
@@ -118,5 +119,41 @@
         "readable": true,
         "writable": false,
         "type": "servo"
+    },
+    {
+        "name": "controlEncendido",
+        "description": "Control de encendido del husillo",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 10,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "",
+        "readable": true,
+        "writable": true,
+        "type": "screw_control"
+    },
+    {
+        "name": "velocidadHusillo",
+        "description": "Velocidad de operación del husillo",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 20,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "RPM",
+        "readable": true,
+        "writable": true,
+        "type": "screw_control"
+    },
+    {
+        "name": "torqueHusillo",
+        "description": "Torque de operación del husillo",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 30,
+        "opcuaDataType": "Double",
+        "scaleFactor": 1,
+        "unit": "Nm",
+        "readable": true,
+        "writable": true,
+        "type": "screw_control"
     }
-]
+]   

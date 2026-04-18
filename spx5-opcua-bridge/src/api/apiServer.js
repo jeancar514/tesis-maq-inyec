@@ -3,7 +3,7 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const config = require('../../config/config');
-const mqttClient = require('../mqtt/mqttClient');
+const modbusClient = require('../modbus/modbusClient');
 const opcuaServer = require('../opcua/opcuaServer');
 const registerManager = require('../utils/registerManager');
 const logger = require('../utils/logger');
@@ -59,16 +59,52 @@ class ApiServer {
 
         this.app.get(ROUTES.SERVO, (req, res) => {
             try {
-                const servoRegisters = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.SERVO);
-                const servoValues = {};
-                servoRegisters.forEach(reg => {
-                    servoValues[reg.name] = opcuaServer._getCachedValue(reg);
-                });
-
-                res.json(servoValues);
+                const regs = registerManager.getAll().filter(reg =>
+                    reg.type === REGISTER_TYPES.SERVO || reg.type === REGISTER_TYPES.SCREW_CONTROL
+                );
+                const values = {};
+                regs.forEach(reg => { values[reg.name] = opcuaServer._getCachedValue(reg); });
+                res.json(values);
             } catch (err) {
                 res.status(500).json({ error: err.message });
             }
+        });
+
+        // GET /api/screw-control — leer valores actuales de los 3 registros de control
+        this.app.get(ROUTES.SCREW_CONTROL, (req, res) => {
+            try {
+                const regs = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.SCREW_CONTROL);
+                const values = {};
+                regs.forEach(reg => { values[reg.name] = opcuaServer._getCachedValue(reg); });
+                res.json(values);
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+
+        // POST /api/screw-control — escribir uno o varios registros de control
+        // Body: { controlEncendido?: 0|1, velocidadHusillo?: number, torqueHusillo?: number }
+        this.app.post(ROUTES.SCREW_CONTROL, async (req, res) => {
+            const allowed = ['controlEncendido', 'velocidadHusillo', 'torqueHusillo'];
+            const entries = Object.entries(req.body).filter(([k]) => allowed.includes(k));
+            if (entries.length === 0)
+                return res.status(400).json({ error: `Body must include at least one of: ${allowed.join(', ')}` });
+
+            const results = {};
+            for (const [name, value] of entries) {
+                const reg = registerManager.getAll().find(r => r.name === name);
+                if (!reg) { results[name] = { error: 'register not found' }; continue; }
+                if (!reg.writable) { results[name] = { error: 'read-only' }; continue; }
+                try {
+                    await modbusClient.writeByConfig(reg, Number(value));
+                    opcuaServer.updateCachedValue(reg.name, Number(value));
+                    opcuaServer.markAsWritten(reg.name);
+                    results[name] = { success: true, value: Number(value) };
+                } catch (err) {
+                    results[name] = { error: err.message };
+                }
+            }
+            res.json(results);
         });
 
         this.app.post(ROUTES.OPERATION_MODE, async (req, res) => {
@@ -78,7 +114,7 @@ class ApiServer {
             if (!reg.writable) return res.status(403).json({ error: 'Operation mode is read-only' });
             if (![1, 2].includes(mode)) return res.status(400).json({ error: 'Invalid mode' });
             try {
-                await mqttClient.writeByConfig(reg, mode);
+                await modbusClient.writeByConfig(reg, mode);
                 opcuaServer.updateCachedValue(reg.name, mode);
                 opcuaServer.markAsWritten(reg.name);
                 this.broadcastOperationModeUpdate(mode);
@@ -96,7 +132,7 @@ class ApiServer {
             if (!['start', 'stop'].includes(command)) return res.status(400).json({ error: 'Invalid command' });
             const value = command === 'start' ? 1 : 0;
             try {
-                await mqttClient.writeByConfig(reg, value);
+                await modbusClient.writeByConfig(reg, value);
                 opcuaServer.updateCachedValue(reg.name, value);
                 opcuaServer.markAsWritten(reg.name);
                 this.broadcastCycleCommandUpdate(command);

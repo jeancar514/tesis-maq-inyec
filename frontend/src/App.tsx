@@ -6,6 +6,7 @@ import { TimeMonitorPage } from './presentation/features/dashboard/pages/TimeMon
 import { ClampPage } from './presentation/features/clamp/pages/ClampPage';
 import { OpeningProfilePage } from './presentation/features/clamp/pages/OpeningProfilePage';
 import { InjectionProfilePage } from './presentation/features/injection/pages/InjectionProfilePage';
+import { GeneralPage } from './presentation/features/injection/pages/GeneralPage';
 import { HoldingPage } from './presentation/features/injection/pages/HoldingPage';
 import { InjectionGraphsPage } from './presentation/features/injection/pages/InjectionGraphsPage';
 import { EjectionProfilePage } from './presentation/features/ejection/pages/EjectionProfilePage';
@@ -34,11 +35,11 @@ const App: React.FC = () => {
                         <Route path="opening-profile" element={<OpeningProfilePage />} />
                     </Route>
                     <Route path="injection">
-                        <Route index element={<Navigate to="/injection/injection-profile" replace />} />
+                        <Route index element={<Navigate to="/injection/general" replace />} />
+                        <Route path="general" element={<GeneralPage />} />
                         <Route path="injection-profile" element={<InjectionProfilePage />} />
                         <Route path="holding" element={<HoldingPage />} />
                         <Route path="graphs" element={<InjectionGraphsPage />} />
-                        {/* <Route path="dosing" element={<DosingPage />} /> */}
                     </Route>
                     <Route path="ejection">
                         <Route index element={<Navigate to="/ejection/ejection-profile" replace />} />

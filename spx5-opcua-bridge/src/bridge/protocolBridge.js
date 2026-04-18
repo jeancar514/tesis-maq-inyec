@@ -1,5 +1,5 @@
 const config = require('../../config/config');
-const mqttClient = require('../mqtt/mqttClient');
+const modbusClient = require('../modbus/modbusClient');
 const opcuaServer = require('../opcua/opcuaServer');
 const apiServer = require('../api/apiServer');
 const registerManager = require('../utils/registerManager');
@@ -21,7 +21,8 @@ class ProtocolBridge {
             startWatching();
 
             await opcuaServer.initialize();
-            await mqttClient.connect();
+            this._setupEventHandlers(); // attach listeners before connect
+            await modbusClient.connect();
             await opcuaServer.start();
             await apiServer.start();
 
@@ -47,29 +48,26 @@ class ProtocolBridge {
     }
 
     async _pollAllRegisters() {
-        if (!mqttClient.isConnected) return;
+        if (!modbusClient.isConnected) return;
 
         const registers = registerManager.getAll();
         for (const reg of registers) {
             if (!reg.readable) continue;
 
             try {
-                const value = await mqttClient.readByConfig(reg);
+                const value = await modbusClient.readByConfig(reg);
                 opcuaServer.updateCachedValue(reg.name, value, true);
             } catch (error) {
-                // Silenciar "No MQTT data received yet" ya que es normal al inicio
-                if (!error.message.includes('No MQTT data')) {
-                    logger.warn(`Error polling ${reg.name}: ${error.message}`);
-                }
+                logger.warn(`Error polling ${reg.name}: ${error.message}`);
             }
         }
     }
 
     _setupEventHandlers() {
-        mqttClient.on('connected', () => logger.info('MQTT reconnected'));
-        mqttClient.on('disconnected', () => logger.warn('MQTT disconnected'));
-        mqttClient.on('error', (err) => logger.error(`MQTT error: ${err.message}`));
-        mqttClient.on('maxRetriesReached', () => logger.error('MQTT max retries reached'));
+        modbusClient.on('connected', () => logger.info('Modbus reconnected'));
+        modbusClient.on('disconnected', () => logger.warn('Modbus disconnected'));
+        modbusClient.on('error', (err) => logger.error(`Modbus error: ${err.message}`));
+        modbusClient.on('maxRetriesReached', () => logger.error('Modbus max retries reached'));
 
         process.on('SIGINT', () => this.stop());
         process.on('SIGTERM', () => this.stop());
@@ -82,7 +80,7 @@ class ProtocolBridge {
             this.pollingInterval = null;
         }
 
-        await mqttClient.disconnect();
+        await modbusClient.disconnect();
         await opcuaServer.stop();
         await apiServer.stop();
 

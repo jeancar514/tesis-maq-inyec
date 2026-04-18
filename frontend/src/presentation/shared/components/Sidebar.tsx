@@ -44,6 +44,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
     'injection': {
         title: 'Control de Inyección',
         items: [
+            { label: 'General', icon: 'monitor_heart', to: '/injection/general' },
             { label: 'Carro de Inyección', icon: 'insights', to: '/injection/injection-profile' },
             { label: 'Husillo', icon: 'compress', to: '/injection/holding' },
             { label: 'Gráficos', icon: 'show_chart', to: '/injection/graphs' },

@@ -83,7 +83,8 @@ class MqttClient extends EventEmitter {
 
             this.client.on('error', (err) => {
                 logger.error(`MQTT error: ${err.message}`);
-                this.emit('error', err);
+                // Only emit 'error' if there are external listeners to avoid unhandled crash
+                if (this.listenerCount('error') > 0) this.emit('error', err);
                 if (!this.isConnected) reject(err);
             });
         });
