@@ -14,15 +14,21 @@ class ProtocolBridge {
     }
 
     async start() {
-        logger.info('Starting SPX5 OPC UA Bridge (MQTT)...');
+        logger.info('Starting SPX5 OPC UA Bridge (Modbus - OPC UA)...');
         try {
             // Inicializar DB primero (independiente de Modbus/OPC UA)
             await initTable(registerManager.getAll());
             startWatching();
 
             await opcuaServer.initialize();
-            this._setupEventHandlers(); // attach listeners before connect
-            await modbusClient.connect();
+
+            // Modbus no es crítico — si falla el API sigue corriendo
+            try {
+                await modbusClient.connect();
+            } catch (modbusErr) {
+                logger.warn(`Modbus no disponible: ${modbusErr.message}`);
+            }
+
             await opcuaServer.start();
             await apiServer.start();
 
@@ -33,6 +39,7 @@ class ProtocolBridge {
             logger.info('Bridge started successfully');
         } catch (error) {
             logger.error(`Fatal error starting bridge: ${error.message}`);
+            logger.error(error.stack || error);
             throw error;
         }
     }

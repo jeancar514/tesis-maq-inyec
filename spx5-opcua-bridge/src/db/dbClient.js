@@ -32,7 +32,7 @@ async function initTable(registers) {
     `;
 
     await pool.query(sql);
-    logger.info('Tabla 35678 lista en PostgreSQL');
+    logger.info('Tabla "lecturas" lista en PostgreSQL');
 }
 
 async function insertLectura(values) {
