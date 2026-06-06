@@ -5,6 +5,7 @@ import { StepCyclePage } from './presentation/features/dashboard/pages/StepCycle
 import { TimeMonitorPage } from './presentation/features/dashboard/pages/TimeMonitorPage';
 import { ClampPage } from './presentation/features/clamp/pages/ClampPage';
 import { OpeningProfilePage } from './presentation/features/clamp/pages/OpeningProfilePage';
+import { MoldGeneralPage } from './presentation/features/clamp/pages/MoldGeneralPage';
 import { InjectionProfilePage } from './presentation/features/injection/pages/InjectionProfilePage';
 import { GeneralPage } from './presentation/features/injection/pages/GeneralPage';
 import { HoldingPage } from './presentation/features/injection/pages/HoldingPage';
@@ -29,9 +30,9 @@ const App: React.FC = () => {
                         <Route path="time-monitor" element={<TimeMonitorPage />} />
                         <Route path="servo-monitor" element={<ServoMonitorPage />} />
                     </Route>
-
                     <Route path="clamp">
-                        <Route index element={<ClampPage />} />
+                        <Route index element={<MoldGeneralPage />} />
+                        <Route path="closing-profile" element={<ClampPage />} />
                         <Route path="opening-profile" element={<OpeningProfilePage />} />
                     </Route>
                     <Route path="injection">

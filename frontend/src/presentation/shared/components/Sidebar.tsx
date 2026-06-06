@@ -37,7 +37,8 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
     'clamp': {
         title: 'Control de Cierre',
         items: [
-            { label: 'Perfil de Cierre', icon: 'timeline', to: '/clamp' },
+            { label: 'Vista General', icon: 'view_in_ar', to: '/clamp' },
+            { label: 'Perfil de Cierre', icon: 'timeline', to: '/clamp/closing-profile' },
             { label: 'Perfil de Apertura', icon: 'open_in_full', to: '/clamp/opening-profile' },
         ]
     },
