@@ -159,6 +159,43 @@ class ApiServer {
             res.json(results);
         });
 
+        // GET /api/mold-control — leer valores actuales de los registros de control del molde
+        this.app.get(ROUTES.MOLD_CONTROL, (req, res) => {
+            try {
+                const regs = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.MOLD_CONTROL);
+                const values = {};
+                regs.forEach(reg => { values[reg.name] = opcuaServer._getCachedValue(reg); });
+                res.json(values);
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+
+        // POST /api/mold-control — escribir uno o varios registros de control del molde
+        // Body: { moldControlEncendido?, moldTorque?, moldCambioPosicion?, moldPosicion1?, moldPosicion2?, moldVelocidadPosicion? }
+        this.app.post(ROUTES.MOLD_CONTROL, async (req, res) => {
+            const allowed = ['moldControlEncendido', 'moldTorque', 'moldCambioPosicion', 'moldPosicion1', 'moldPosicion2', 'moldVelocidadPosicion'];
+            const entries = Object.entries(req.body).filter(([k]) => allowed.includes(k));
+            if (entries.length === 0)
+                return res.status(400).json({ error: `Body must include at least one of: ${allowed.join(', ')}` });
+
+            const results = {};
+            for (const [name, value] of entries) {
+                const reg = registerManager.getAll().find(r => r.name === name);
+                if (!reg) { results[name] = { error: 'register not found' }; continue; }
+                if (!reg.writable) { results[name] = { error: 'read-only' }; continue; }
+                try {
+                    await modbusClient.writeByConfig(reg, Number(value));
+                    opcuaServer.updateCachedValue(reg.name, Number(value));
+                    opcuaServer.markAsWritten(reg.name);
+                    results[name] = { success: true, value: Number(value) };
+                } catch (err) {
+                    results[name] = { error: err.message };
+                }
+            }
+            res.json(results);
+        });
+
         this.app.post(ROUTES.OPERATION_MODE, async (req, res) => {
             const { mode } = req.body; // 1: manual, 2: automático
             const reg = registerManager.getAll().find(r => r.type === REGISTER_TYPES.OPERATION_MODE);

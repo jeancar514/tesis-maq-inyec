@@ -20,18 +20,25 @@ async function initTable(registers) {
             case 'Int32': case 'UInt32':           pgType = 'INTEGER'; break;
             case 'Float': case 'Double': default:  pgType = 'DOUBLE PRECISION';
         }
-        return `"${r.name}" ${pgType}`;
+        return { name: r.name, pgType };
     });
 
-    const sql = `
+    // Crear tabla si no existe (con la primera columna para evitar tabla vacía)
+    const colDefs = columns.map(c => `"${c.name}" ${c.pgType}`).join(',\n            ');
+    const createSql = `
         CREATE TABLE IF NOT EXISTS lecturas (
             id          SERIAL PRIMARY KEY,
-            ${columns.join(',\n            ')},
+            ${colDefs},
             guardado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
     `;
+    await pool.query(createSql);
 
-    await pool.query(sql);
+    // Agregar columnas nuevas si la tabla ya existía (sin borrar datos)
+    for (const col of columns) {
+        await pool.query(`ALTER TABLE lecturas ADD COLUMN IF NOT EXISTS "${col.name}" ${col.pgType};`);
+    }
+
     logger.info('Tabla "lecturas" lista en PostgreSQL');
 }
 

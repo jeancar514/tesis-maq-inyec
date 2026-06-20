@@ -171,5 +171,77 @@
         "readable": true,
         "writable": true,
         "type": "screw_control"
+    },
+    {
+        "name": "moldControlEncendido",
+        "description": "Control de encendido del servo de molde",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 40,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "",
+        "readable": true,
+        "writable": true,
+        "type": "mold_control"
+    },
+    {
+        "name": "moldTorque",
+        "description": "Torque máximo del servo de cierre de molde",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 41,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "%",
+        "readable": true,
+        "writable": true,
+        "type": "mold_control"
+    },
+    {
+        "name": "moldCambioPosicion",
+        "description": "Posición de cambio de velocidad",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 42,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "mold_control"
+    },
+    {
+        "name": "moldPosicion1",
+        "description": "Posición 1 de referencia del molde",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 43,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "mold_control"
+    },
+    {
+        "name": "moldPosicion2",
+        "description": "Posición 2 de referencia del molde",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 44,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "mold_control"
+    },
+    {
+        "name": "moldVelocidadPosicion",
+        "description": "Velocidad del servo en posición de cierre",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 45,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm/s",
+        "readable": true,
+        "writable": true,
+        "type": "mold_control"
     }
 ]   

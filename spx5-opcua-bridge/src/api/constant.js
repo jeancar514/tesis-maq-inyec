@@ -3,7 +3,8 @@ const ROUTES = {
     SERVO: '/api/servo',
     OPERATION_MODE: '/api/operation-mode',
     CYCLE_COMMAND: '/api/cycle-command',
-    SCREW_CONTROL: '/api/screw-control'
+    SCREW_CONTROL: '/api/screw-control',
+    MOLD_CONTROL: '/api/mold-control'
 };
 
 const REGISTER_TYPES = {
@@ -11,7 +12,8 @@ const REGISTER_TYPES = {
     SERVO: 'servo',
     OPERATION_MODE: 'operation_mode',
     CYCLE_COMMAND: 'cycle_command',
-    SCREW_CONTROL: 'screw_control'
+    SCREW_CONTROL: 'screw_control',
+    MOLD_CONTROL: 'mold_control'
 };
 
 module.exports = {

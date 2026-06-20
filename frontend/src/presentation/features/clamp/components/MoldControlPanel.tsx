@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { ScrewControlRepository } from '../../../../infrastructure/repository/screw-control.repository';
-import { ScrewControlData } from '../../../../domain/models/screw-control.model';
+import { MoldControlRepository } from '../../../../infrastructure/repository/mold-control.repository';
+import { MoldControlData } from '../../../../domain/models/mold-control.model';
 
-const repo = new ScrewControlRepository();
+const repo = new MoldControlRepository();
+
+const DEFAULTS: MoldControlData = {
+    moldControlEncendido: 0,
+    moldTorque: 0,
+    moldCambioPosicion: 0,
+    moldPosicion1: 0,
+    moldPosicion2: 0,
+    moldVelocidadPosicion: 0,
+};
 
 export const MoldControlPanel: React.FC = () => {
-    const [draft, setDraft] = useState<ScrewControlData>({ controlEncendido: 0, velocidadHusillo: 0, torqueHusillo: 0 });
+    const [draft, setDraft] = useState<MoldControlData>(DEFAULTS);
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState<'idle' | 'ok' | 'error'>('idle');
 
@@ -15,7 +24,7 @@ export const MoldControlPanel: React.FC = () => {
             .catch(() => {/* bridge offline — keep defaults */});
     }, []);
 
-    const handleChange = (key: keyof ScrewControlData, value: number) => {
+    const handleChange = (key: keyof MoldControlData, value: number) => {
         setDraft(p => ({ ...p, [key]: value }));
     };
 
@@ -33,13 +42,14 @@ export const MoldControlPanel: React.FC = () => {
         }
     };
 
-    const encendido = draft.controlEncendido === 37;
+    const encendido = draft.moldControlEncendido === 37;
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4">
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-icons text-sm text-primary">tune</span>
+                    <span className="material-icons text-sm text-primary">settings_input_component</span>
                     Control Molde
                 </p>
                 {status === 'ok' && (
@@ -54,36 +64,69 @@ export const MoldControlPanel: React.FC = () => {
                 )}
             </div>
 
-            <div className="space-y-4">
-                {/* Control Encendido — toggle */}
+            <div className="space-y-3">
+                {/* Encendido toggle */}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                    <div>
+                    <div className="flex items-center gap-2">
+                        <span className="material-icons text-sm text-slate-400">power_settings_new</span>
                         <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Encendido</p>
                     </div>
                     <button
-                        onClick={() => handleChange('controlEncendido', encendido ? 0 : 37)}
+                        onClick={() => handleChange('moldControlEncendido', encendido ? 0 : 37)}
                         className={`relative w-11 h-6 rounded-full transition-colors ${encendido ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
                     >
                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${encendido ? 'translate-x-5' : ''}`} />
                     </button>
                 </div>
 
-                {/* Velocidad */}
-                <NumberField
-                    label="Velocidad"
-                    unit="RPM"
-                    value={draft.velocidadHusillo}
-                    min={0} max={3000}
-                    onChange={v => handleChange('velocidadHusillo', v)}
-                />
-
                 {/* Torque */}
                 <NumberField
+                    icon="compress"
                     label="Torque"
-                    unit="Nm"
-                    value={draft.torqueHusillo}
+                    unit="%"
+                    value={draft.moldTorque}
+                    min={0} max={100}
+                    onChange={v => handleChange('moldTorque', v)}
+                />
+
+                {/* Cambio de Posición */}
+                <NumberField
+                    icon="swap_horiz"
+                    label="Cambio de Posición"
+                    unit="mm"
+                    value={draft.moldCambioPosicion}
+                    min={0} max={2000}
+                    onChange={v => handleChange('moldCambioPosicion', v)}
+                />
+
+                {/* Posición 1 */}
+                <NumberField
+                    icon="looks_one"
+                    label="Posición 1"
+                    unit="mm"
+                    value={draft.moldPosicion1}
+                    min={0} max={2000}
+                    onChange={v => handleChange('moldPosicion1', v)}
+                />
+
+                {/* Posición 2 */}
+                <NumberField
+                    icon="looks_two"
+                    label="Posición 2"
+                    unit="mm"
+                    value={draft.moldPosicion2}
+                    min={0} max={2000}
+                    onChange={v => handleChange('moldPosicion2', v)}
+                />
+
+                {/* Velocidad en Posición */}
+                <NumberField
+                    icon="speed"
+                    label="Velocidad en Posición"
+                    unit="mm/s"
+                    value={draft.moldVelocidadPosicion}
                     min={0} max={500}
-                    onChange={v => handleChange('torqueHusillo', v)}
+                    onChange={v => handleChange('moldVelocidadPosicion', v)}
                 />
             </div>
 
@@ -100,16 +143,21 @@ export const MoldControlPanel: React.FC = () => {
 };
 
 const NumberField: React.FC<{
-    label: string; unit: string;
-    value: number; min: number; max: number;
+    icon: string;
+    label: string;
+    unit: string;
+    value: number;
+    min: number;
+    max: number;
     onChange: (v: number) => void;
-}> = ({ label, unit, value, min, max, onChange }) => (
+}> = ({ icon, label, unit, value, min, max, onChange }) => (
     <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center mb-2">
-            <div>
+            <div className="flex items-center gap-1.5">
+                <span className="material-icons text-sm text-slate-400">{icon}</span>
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{label}</p>
             </div>
-            <span className="text-[10px] text-slate-400">{unit}</span>
+            <span className="text-[10px] text-slate-400 font-mono">{unit}</span>
         </div>
         <input
             type="number"
