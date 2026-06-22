@@ -241,6 +241,73 @@ class ApiServer {
         registerControlRoutes(ROUTES.CARRIAGE_CONTROL, REGISTER_TYPES.CARRIAGE_CONTROL);
         registerControlRoutes(ROUTES.EJECTOR_CONTROL, REGISTER_TYPES.EJECTOR_CONTROL);
 
+        // ── Movimiento por posición (Pos1/Pos2 + disparo de Cambio de Posición) ──
+        // La asignación de posiciones ocurre EXACTAMENTE al pulsar "Ir":
+        //   1. Lee la posición real del PLC en ese instante (Y).
+        //   2. Escribe Y en Posición 1.
+        //   3. Escribe X (objetivo) en Posición 2.
+        //   4. Dispara la variable Cambio de Posición.
+        // Así el PLC evalúa posiciones estáticas exactas, sin lecturas desfasadas.
+        const POSITION_MOVE = {
+            [REGISTER_TYPES.MOLD_CONTROL]:     { pos1: 'moldPosicion1',     pos2: 'moldPosicion2',     cambio: 'moldCambioPosicion',     current: 'moldPosicion1' },
+            [REGISTER_TYPES.CARRIAGE_CONTROL]: { pos1: 'carriagePosicion1', pos2: 'carriagePosicion2', cambio: 'carriageCambioPosicion', current: 'carriagePosicion' },
+            [REGISTER_TYPES.EJECTOR_CONTROL]:  { pos1: 'ejectorPosicion1',  pos2: 'ejectorPosicion2',  cambio: 'ejectorCambioPosicion',  current: 'ejectorPosicion' },
+        };
+
+        const registerMoveRoute = (route, regType) => {
+            this.app.post(route, async (req, res) => {
+                const cfg = POSITION_MOVE[regType];
+                if (!cfg) return res.status(400).json({ error: 'Move not supported for this type' });
+
+                const target = Number(req.body.target);
+                if (Number.isNaN(target)) return res.status(400).json({ error: 'Field "target" (number) is required' });
+
+                const all = registerManager.getAll();
+                const pos1Reg = all.find(r => r.name === cfg.pos1);
+                const pos2Reg = all.find(r => r.name === cfg.pos2);
+                const cambioReg = all.find(r => r.name === cfg.cambio);
+                const currentReg = all.find(r => r.name === cfg.current);
+                if (!pos1Reg || !pos2Reg || !cambioReg) return res.status(404).json({ error: 'Position registers not found' });
+
+                try {
+                    // 1 ─ Leer la posición REAL del PLC en este instante (Y)
+                    let current;
+                    try {
+                        current = await modbusClient.readByConfig(currentReg);
+                    } catch {
+                        current = opcuaServer._getCachedValue(currentReg) || 0;
+                    }
+                    current = Math.round(Number(current) || 0);
+
+                    // 2 ─ Escribir Y en Posición 1
+                    await modbusClient.writeByConfig(pos1Reg, current);
+                    opcuaServer.updateCachedValue(pos1Reg.name, current);
+                    opcuaServer.markAsWritten(pos1Reg.name);
+
+                    // 3 ─ Escribir X (objetivo) en Posición 2
+                    await modbusClient.writeByConfig(pos2Reg, target);
+                    opcuaServer.updateCachedValue(pos2Reg.name, target);
+                    opcuaServer.markAsWritten(pos2Reg.name);
+
+                    // 4 ─ Disparar Cambio de Posición (trigger)
+                    const triggerVal = req.body.cambio !== undefined
+                        ? Number(req.body.cambio)
+                        : (Number(opcuaServer._getCachedValue(cambioReg)) || 1);
+                    await modbusClient.writeByConfig(cambioReg, triggerVal);
+                    opcuaServer.updateCachedValue(cambioReg.name, triggerVal);
+                    opcuaServer.markAsWritten(cambioReg.name);
+
+                    res.json({ success: true, currentPosition: current, target, trigger: triggerVal });
+                } catch (err) {
+                    res.status(500).json({ error: err.message });
+                }
+            });
+        };
+
+        registerMoveRoute(`${ROUTES.MOLD_CONTROL}/move`, REGISTER_TYPES.MOLD_CONTROL);
+        registerMoveRoute(`${ROUTES.CARRIAGE_CONTROL}/move`, REGISTER_TYPES.CARRIAGE_CONTROL);
+        registerMoveRoute(`${ROUTES.EJECTOR_CONTROL}/move`, REGISTER_TYPES.EJECTOR_CONTROL);
+
         this.app.post(ROUTES.OPERATION_MODE, async (req, res) => {
             const { mode } = req.body; // 1: manual, 2: automático
             const reg = registerManager.getAll().find(r => r.type === REGISTER_TYPES.OPERATION_MODE);

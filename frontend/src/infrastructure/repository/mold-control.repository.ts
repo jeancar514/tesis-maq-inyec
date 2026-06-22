@@ -12,4 +12,9 @@ export class MoldControlRepository {
     async update(payload: Partial<MoldControlData>): Promise<Record<string, { success?: boolean; error?: string; value?: number }>> {
         return httpService.post(BASE, payload);
     }
+
+    /** Mueve a la posición objetivo: el backend fija Pos1=actual, Pos2=objetivo y dispara Cambio de Posición. */
+    async move(target: number, cambio?: number): Promise<{ success?: boolean; currentPosition?: number; target?: number; error?: string }> {
+        return httpService.post(`${BASE}/move`, cambio !== undefined ? { target, cambio } : { target });
+    }
 }

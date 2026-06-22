@@ -7,14 +7,20 @@ const SidebarItem: React.FC<{ label: string; icon: string; to: string }> = ({ la
             to={to}
             end
             className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                    ? 'bg-primary/10 text-primary font-bold'
-                    : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                `group relative flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 ${isActive
+                    ? 'bg-gradient-to-r from-primary-500/15 to-accent/10 text-primary font-bold shadow-soft'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-slate-200'
                 }`
             }
         >
-            <span className="material-icons">{icon}</span>
-            <span className="text-sm">{label}</span>
+            {({ isActive }) => (
+                <>
+                    {/* Barra de acento activa */}
+                    <span className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-gradient-to-b from-primary to-accent transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`} />
+                    <span className={`material-icons text-[20px] transition-colors ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-primary/70'}`}>{icon}</span>
+                    <span className="text-sm">{label}</span>
+                </>
+            )}
         </NavLink>
     );
 };
@@ -90,15 +96,24 @@ export const Sidebar: React.FC = () => {
     const config = SIDEBAR_CONFIGS[currentSection] || SIDEBAR_CONFIGS['dashboard'];
 
     return (
-        <aside className="w-56 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full shrink-0">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-                <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{config.title}</h2>
+        <aside className="w-56 flex flex-col h-full shrink-0 bg-gradient-to-b from-white/90 to-slate-50/80 dark:from-surface-dark/90 dark:to-background-dark/80 backdrop-blur-sm border-r border-slate-200/80 dark:border-slate-800">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center gap-2">
+                    <span className="h-4 w-1 rounded-full bg-gradient-to-b from-primary to-accent" />
+                    <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{config.title}</h2>
+                </div>
             </div>
-            <nav className="flex-1 p-2 space-y-1 overflow-y-auto custom-scrollbar">
+            <nav className="flex-1 p-2.5 space-y-1 overflow-y-auto custom-scrollbar">
                 {config.items.map((item) => (
                     <SidebarItem key={item.to} label={item.label} icon={item.icon} to={item.to} />
                 ))}
             </nav>
+            <div className="p-3 border-t border-slate-100 dark:border-slate-800/80">
+                <div className="rounded-xl bg-gradient-to-br from-primary-500/10 to-accent/10 p-3 text-center">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Estado</p>
+                    <p className="text-xs font-bold text-primary mt-0.5">Operativo</p>
+                </div>
+            </div>
         </aside>
     );
 };

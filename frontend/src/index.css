@@ -8,16 +8,62 @@
     overflow: hidden;
   }
   body {
-    @apply bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-display;
+    @apply text-slate-700 dark:text-slate-100 font-display;
+    background-color: #e9eef5;
+    background-image: theme('backgroundImage.app-light');
+    background-attachment: fixed;
   }
+  .dark body {
+    background-color: #0a111c;
+    background-image: theme('backgroundImage.app-dark');
+  }
+}
+
+@layer components {
+  /* Superficie tipo tarjeta con leve degradado y profundidad */
+  .surface-card {
+    @apply bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-slate-700/60 rounded-xl shadow-card;
+  }
+  /* Encabezado de panel con barra de acento */
+  .panel-accent {
+    @apply relative overflow-hidden;
+  }
+  .panel-accent::before {
+    content: "";
+    @apply absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary to-accent;
+  }
+  /* Textura de cuadrícula sutil para fondos de área */
+  .bg-grid {
+    background-image: theme('backgroundImage.grid-light');
+    background-size: 28px 28px;
+  }
+  .dark .bg-grid {
+    background-image: theme('backgroundImage.grid-dark');
+  }
+  /* Botón primario con degradado */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold shadow-glow hover:from-primary-400 hover:to-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
+
+@layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    width: 7px;
+    height: 7px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: linear-gradient(180deg, #93c5fd, #60a5fa);
     border-radius: 10px;
   }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #1e3a5f, #0a63c4);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #0d7ff2;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
