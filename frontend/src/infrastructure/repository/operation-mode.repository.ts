@@ -4,7 +4,6 @@ import { httpService } from '../helpers/http-service';
 import { environment } from '../../environments/environment';
 
 const OPERATION_MODE_ENDPOINT = `${environment.apiUrl}/api/operation-mode`;
-const OPERATION_MODE_WS = `/ws/operation-mode`;
 
 export class OperationModeRepository implements OperationModeGateway {
     private wsService: any;

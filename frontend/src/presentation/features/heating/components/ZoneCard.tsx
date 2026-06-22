@@ -14,7 +14,6 @@ export const ZoneCard: React.FC<ZoneCardProps> = ({
     name,
     pv,
     sp,
-    ssr,
     tolSup,
     tolInf,
     statusColor = "bg-emerald-500"

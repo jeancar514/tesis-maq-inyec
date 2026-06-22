@@ -4,7 +4,6 @@ import { httpService } from '../helpers/http-service';
 import { environment } from '../../environments/environment';
 
 const CYCLE_COMMAND_ENDPOINT = `${environment.apiUrl}/api/cycle-command`;
-const CYCLE_COMMAND_WS = `/ws/cycle-command`;
 
 export class CycleCommandRepository implements CycleCommandGateway {
     private wsService: any;

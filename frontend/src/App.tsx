@@ -8,9 +8,11 @@ import { OpeningProfilePage } from './presentation/features/clamp/pages/OpeningP
 import { MoldGeneralPage } from './presentation/features/clamp/pages/MoldGeneralPage';
 import { InjectionProfilePage } from './presentation/features/injection/pages/InjectionProfilePage';
 import { GeneralPage } from './presentation/features/injection/pages/GeneralPage';
+import { CarriageGeneralPage } from './presentation/features/injection/pages/CarriageGeneralPage';
 import { HoldingPage } from './presentation/features/injection/pages/HoldingPage';
 import { InjectionGraphsPage } from './presentation/features/injection/pages/InjectionGraphsPage';
 import { EjectionProfilePage } from './presentation/features/ejection/pages/EjectionProfilePage';
+import { EjectorGeneralPage } from './presentation/features/ejection/pages/EjectorGeneralPage';
 import { HeatingZonesPage } from './presentation/features/heating/pages/HeatingZonesPage';
 import { PIDDiagnosticPage } from './presentation/features/heating/pages/PIDDiagnosticPage';
 import { IOMonitorPage } from './presentation/features/maintenance/pages/IOMonitorPage';
@@ -38,12 +40,14 @@ const App: React.FC = () => {
                     <Route path="injection">
                         <Route index element={<Navigate to="/injection/general" replace />} />
                         <Route path="general" element={<GeneralPage />} />
+                        <Route path="carriage" element={<CarriageGeneralPage />} />
                         <Route path="injection-profile" element={<InjectionProfilePage />} />
                         <Route path="holding" element={<HoldingPage />} />
                         <Route path="graphs" element={<InjectionGraphsPage />} />
                     </Route>
                     <Route path="ejection">
-                        <Route index element={<Navigate to="/ejection/ejection-profile" replace />} />
+                        <Route index element={<Navigate to="/ejection/general" replace />} />
+                        <Route path="general" element={<EjectorGeneralPage />} />
                         <Route path="ejection-profile" element={<EjectionProfilePage />} />
                     </Route>
                     <Route path="heating">

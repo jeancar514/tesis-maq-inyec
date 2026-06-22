@@ -59,10 +59,10 @@
         "writable": true,
         "type": "cycle_command"
     },
-    
+
     {
         "name": "speed",
-        "description": "Lectura de Velocidad del Servo",
+        "description": "Lectura de Velocidad del Servo (Velocidad secundaria)",
         "modbusType": "inputRegister",
         "modbusAddress": 18,
         "opcuaDataType": "Double",
@@ -74,7 +74,7 @@
     },
     {
         "name": "torque",
-        "description": "Lectura de Torque del Servo",
+        "description": "Lectura de Torque del Servo (Torque secundario)",
         "modbusType": "inputRegister",
         "modbusAddress": 28,
         "opcuaDataType": "Double",
@@ -98,7 +98,7 @@
     },
     {
         "name": "current",
-        "description": "Corriente del Servo",
+        "description": "Corriente del Servo (Ampere)",
         "modbusType": "inputRegister",
         "modbusAddress": 48,
         "opcuaDataType": "Double",
@@ -110,7 +110,7 @@
     },
     {
         "name": "voltage",
-        "description": "Voltaje del Servo",
+        "description": "Voltaje del Servo (Tensión DC)",
         "modbusType": "inputRegister",
         "modbusAddress": 58,
         "opcuaDataType": "Double",
@@ -120,9 +120,10 @@
         "writable": false,
         "type": "servo"
     },
+
     {
         "name": "controlEncendido",
-        "description": "Control de encendido del husillo",
+        "description": "Control de encendido del husillo (Encender)",
         "modbusType": "holdingRegister",
         "modbusAddress": 10,
         "opcuaDataType": "Int16",
@@ -134,7 +135,7 @@
     },
     {
         "name": "velocidadHusilloLow",
-        "description": "Velocidad husillo - Palabra alta (bits 16-31)",
+        "description": "Velocidad husillo - Palabra baja (bits 0-15)",
         "modbusType": "holdingRegister",
         "modbusAddress": 20,
         "opcuaDataType": "Int16",
@@ -148,7 +149,7 @@
     },
     {
         "name": "velocidadHusilloHigh",
-        "description": "Velocidad husillo - Palabra baja (bits 0-15)",
+        "description": "Velocidad husillo - Palabra alta (bits 16-31)",
         "modbusType": "holdingRegister",
         "modbusAddress": 21,
         "opcuaDataType": "Int16",
@@ -172,11 +173,12 @@
         "writable": true,
         "type": "screw_control"
     },
+
     {
         "name": "moldControlEncendido",
-        "description": "Control de encendido del servo de molde",
+        "description": "Control de encendido del servo de molde (Encender)",
         "modbusType": "holdingRegister",
-        "modbusAddress": 40,
+        "modbusAddress": 60,
         "opcuaDataType": "Int16",
         "scaleFactor": 1,
         "unit": "",
@@ -188,7 +190,7 @@
         "name": "moldTorque",
         "description": "Torque máximo del servo de cierre de molde",
         "modbusType": "holdingRegister",
-        "modbusAddress": 41,
+        "modbusAddress": 88,
         "opcuaDataType": "Int16",
         "scaleFactor": 1,
         "unit": "%",
@@ -198,9 +200,9 @@
     },
     {
         "name": "moldCambioPosicion",
-        "description": "Posición de cambio de velocidad",
+        "description": "Posición de cambio de velocidad del molde",
         "modbusType": "holdingRegister",
-        "modbusAddress": 42,
+        "modbusAddress": 98,
         "opcuaDataType": "Int16",
         "scaleFactor": 1,
         "unit": "mm",
@@ -212,7 +214,7 @@
         "name": "moldPosicion1",
         "description": "Posición 1 de referencia del molde",
         "modbusType": "holdingRegister",
-        "modbusAddress": 43,
+        "modbusAddress": 108,
         "opcuaDataType": "Int16",
         "scaleFactor": 1,
         "unit": "mm",
@@ -224,7 +226,7 @@
         "name": "moldPosicion2",
         "description": "Posición 2 de referencia del molde",
         "modbusType": "holdingRegister",
-        "modbusAddress": 44,
+        "modbusAddress": 118,
         "opcuaDataType": "Int16",
         "scaleFactor": 1,
         "unit": "mm",
@@ -236,12 +238,230 @@
         "name": "moldVelocidadPosicion",
         "description": "Velocidad del servo en posición de cierre",
         "modbusType": "holdingRegister",
-        "modbusAddress": 45,
+        "modbusAddress": 120,
         "opcuaDataType": "Int16",
         "scaleFactor": 1,
         "unit": "mm/s",
         "readable": true,
         "writable": true,
         "type": "mold_control"
+    },
+
+    {
+        "name": "carriageControlEncendido",
+        "description": "Control de encendido del carro de inyección (Encender)",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 140,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "",
+        "readable": true,
+        "writable": true,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriageVelocidad",
+        "description": "Lectura de velocidad del carro de inyección",
+        "modbusType": "inputRegister",
+        "modbusAddress": 158,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm/s",
+        "readable": true,
+        "writable": false,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriageTorque",
+        "description": "Torque máximo del carro de inyección",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 160,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "%",
+        "readable": true,
+        "writable": true,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriageTorqueSecundario",
+        "description": "Lectura de torque secundario del carro de inyección",
+        "modbusType": "inputRegister",
+        "modbusAddress": 168,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "%",
+        "readable": true,
+        "writable": false,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriageCambioPosicion",
+        "description": "Posición de cambio de velocidad del carro de inyección",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 170,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriagePosicion",
+        "description": "Lectura de posición actual del carro de inyección",
+        "modbusType": "inputRegister",
+        "modbusAddress": 178,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": false,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriagePosicion1",
+        "description": "Posición 1 de referencia del carro de inyección",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 180,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriagePosicion2",
+        "description": "Posición 2 de referencia del carro de inyección",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 190,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "carriage_control"
+    },
+    {
+        "name": "carriageVelocidadPosicion",
+        "description": "Velocidad del carro de inyección en posición",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 200,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm/s",
+        "readable": true,
+        "writable": true,
+        "type": "carriage_control"
+    },
+
+    {
+        "name": "ejectorControlEncendido",
+        "description": "Control de encendido del eyector (Encender)",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 220,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "",
+        "readable": true,
+        "writable": true,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorVelocidad",
+        "description": "Lectura de velocidad del eyector",
+        "modbusType": "inputRegister",
+        "modbusAddress": 238,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm/s",
+        "readable": true,
+        "writable": false,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorTorque",
+        "description": "Torque máximo del eyector",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 240,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "%",
+        "readable": true,
+        "writable": true,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorTorqueSecundario",
+        "description": "Lectura de torque secundario del eyector",
+        "modbusType": "inputRegister",
+        "modbusAddress": 248,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "%",
+        "readable": true,
+        "writable": false,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorCambioPosicion",
+        "description": "Posición de cambio de velocidad del eyector",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 250,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorPosicion",
+        "description": "Lectura de posición actual del eyector",
+        "modbusType": "inputRegister",
+        "modbusAddress": 258,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": false,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorPosicion1",
+        "description": "Posición 1 de referencia del eyector",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 260,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorPosicion2",
+        "description": "Posición 2 de referencia del eyector",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 270,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm",
+        "readable": true,
+        "writable": true,
+        "type": "ejector_control"
+    },
+    {
+        "name": "ejectorVelocidadPosicion",
+        "description": "Velocidad del eyector en posición",
+        "modbusType": "holdingRegister",
+        "modbusAddress": 280,
+        "opcuaDataType": "Int16",
+        "scaleFactor": 1,
+        "unit": "mm/s",
+        "readable": true,
+        "writable": true,
+        "type": "ejector_control"
     }
-]   
+]

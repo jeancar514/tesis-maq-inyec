@@ -4,7 +4,7 @@ const opcuaServer = require('../opcua/opcuaServer');
 const apiServer = require('../api/apiServer');
 const registerManager = require('../utils/registerManager');
 const logger = require('../utils/logger');
-const { initTable } = require('../db/dbClient');
+const { initSchema } = require('../db/dbClient');
 const { startWatching } = require('../db/lecturaWatcher');
 
 class ProtocolBridge {
@@ -17,7 +17,7 @@ class ProtocolBridge {
         logger.info('Starting SPX5 OPC UA Bridge (Modbus - OPC UA)...');
         try {
             // Inicializar DB primero (independiente de Modbus/OPC UA)
-            await initTable(registerManager.getAll());
+            await initSchema();
             startWatching();
 
             await opcuaServer.initialize();

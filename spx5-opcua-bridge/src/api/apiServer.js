@@ -196,6 +196,51 @@ class ApiServer {
             res.json(results);
         });
 
+        // ── Carro de Inyección y Eyector ──────────────────────────────────
+        // Ambos comparten la misma lógica de control por posición que el molde.
+        // Se registran de forma genérica: GET devuelve todos los registros del
+        // tipo; POST escribe únicamente los registros writable de ese tipo.
+        const registerControlRoutes = (route, regType) => {
+            this.app.get(route, (req, res) => {
+                try {
+                    const regs = registerManager.getAll().filter(reg => reg.type === regType);
+                    const values = {};
+                    regs.forEach(reg => { values[reg.name] = opcuaServer._getCachedValue(reg); });
+                    res.json(values);
+                } catch (err) {
+                    res.status(500).json({ error: err.message });
+                }
+            });
+
+            this.app.post(route, async (req, res) => {
+                const writableNames = registerManager.getAll()
+                    .filter(reg => reg.type === regType && reg.writable)
+                    .map(reg => reg.name);
+                const entries = Object.entries(req.body).filter(([k]) => writableNames.includes(k));
+                if (entries.length === 0)
+                    return res.status(400).json({ error: `Body must include at least one of: ${writableNames.join(', ')}` });
+
+                const results = {};
+                for (const [name, value] of entries) {
+                    const reg = registerManager.getAll().find(r => r.name === name);
+                    if (!reg) { results[name] = { error: 'register not found' }; continue; }
+                    if (!reg.writable) { results[name] = { error: 'read-only' }; continue; }
+                    try {
+                        await modbusClient.writeByConfig(reg, Number(value));
+                        opcuaServer.updateCachedValue(reg.name, Number(value));
+                        opcuaServer.markAsWritten(reg.name);
+                        results[name] = { success: true, value: Number(value) };
+                    } catch (err) {
+                        results[name] = { error: err.message };
+                    }
+                }
+                res.json(results);
+            });
+        };
+
+        registerControlRoutes(ROUTES.CARRIAGE_CONTROL, REGISTER_TYPES.CARRIAGE_CONTROL);
+        registerControlRoutes(ROUTES.EJECTOR_CONTROL, REGISTER_TYPES.EJECTOR_CONTROL);
+
         this.app.post(ROUTES.OPERATION_MODE, async (req, res) => {
             const { mode } = req.body; // 1: manual, 2: automático
             const reg = registerManager.getAll().find(r => r.type === REGISTER_TYPES.OPERATION_MODE);

@@ -1,5 +1,4 @@
 import React from 'react';
-import { PIDChart } from '../components/PIDChart';
 
 export const PIDDiagnosticPage: React.FC = () => {
     const zones = ['Boquilla', 'Zona 1', 'Zona 2', 'Zona 3', 'Zona 4', 'Zona 5'];

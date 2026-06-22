@@ -1,8 +1,5 @@
 import React from 'react';
 import { GraphToolbar } from './GraphToolbar';
-import { PressureGraph } from './PressureGraph';
-import { VelocityGraph } from './VelocityGraph';
-import { AnalysisSidebar } from './AnalysisSidebar';
 
 export const InjectionGraphs: React.FC = () => {
     return (

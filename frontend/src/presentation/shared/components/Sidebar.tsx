@@ -46,7 +46,8 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
         title: 'Control de Inyección',
         items: [
             { label: 'General', icon: 'monitor_heart', to: '/injection/general' },
-            { label: 'Carro de Inyección', icon: 'insights', to: '/injection/injection-profile' },
+            { label: 'Carro de Inyección', icon: 'precision_manufacturing', to: '/injection/carriage' },
+            { label: 'Perfil de Inyección', icon: 'insights', to: '/injection/injection-profile' },
             { label: 'Husillo', icon: 'compress', to: '/injection/holding' },
             { label: 'Gráficos', icon: 'show_chart', to: '/injection/graphs' },
         ]
@@ -54,6 +55,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
     'ejection': {
         title: 'Control de Expulsión',
         items: [
+            { label: 'Eyector', icon: 'eject', to: '/ejection/general' },
             { label: 'Perfil de Eyección', icon: 'show_chart', to: '/ejection/ejection-profile' },
         ]
     },

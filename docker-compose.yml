@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tesis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_ADMIN_USER:-tesis}
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASS:-tesis}
+      POSTGRES_DB: ${DB_NAME:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - tesis_pgdata:/var/lib/postgresql/data
+      # Los scripts SQL se ejecutan automáticamente al inicializar la DB vacía,
+      # en orden alfabético (01_schema.sql -> 02_seed.sql).
+      - ./spx5-opcua-bridge/db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_ADMIN_USER:-tesis} -d ${DB_NAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tesis_pgdata:

@@ -4,7 +4,7 @@ type MessageHandler<T> = (data: T) => void;
 
 export class WebSocketService<T> {
     private ws: WebSocket | null = null;
-    private reconnectTimeout: number | null = null;
+    private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     private messageHandlers: Set<MessageHandler<T>> = new Set();
     private reconnectDelay = 3000;
     private maxReconnectDelay = 30000;
