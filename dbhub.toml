@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Configuración DBHub (MCP) — máquina de inyección
+# Una sola instancia conecta a PostgreSQL, MySQL y SQL Server.
+# Cada herramienta execute_sql está en modo readonly (solo lectura) por seguridad.
+# Para permitir escritura en una fuente, cambia readonly = false en su [[tools]].
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── PostgreSQL local del proyecto (bridge SPX5) ──
+[[sources]]
+id = "postgres"
+description = "Base local del proyecto SPX5 (esquema normalizado de la inyectora)"
+dsn = "postgres://tesis:tesis@localhost:5432/postgres?sslmode=disable"
+
+[[tools]]
+name = "execute_sql"
+source = "postgres"
+readonly = true
+max_rows = 1000
+
+# ── MySQL (PLANTILLA: completa USUARIO/CONTRASENA/NOMBRE_BASE) ──
+# lazy = true => no se conecta al arrancar, solo al primer query (evita errores
+# de arranque mientras no tengas credenciales reales).
+[[sources]]
+id = "mysql"
+description = "MySQL (completar credenciales)"
+dsn = "mysql://USUARIO:CONTRASENA@localhost:3306/NOMBRE_BASE?sslmode=disable"
+lazy = true
+
+[[tools]]
+name = "execute_sql"
+source = "mysql"
+readonly = true
+max_rows = 1000
+
+# ── SQL Server (PLANTILLA: completa USUARIO/CONTRASENA/NOMBRE_BASE) ──
+# Para instancia nombrada agrega:  instanceName = "SQLEXPRESS"
+[[sources]]
+id = "sqlserver"
+description = "SQL Server (completar credenciales)"
+dsn = "sqlserver://USUARIO:CONTRASENA@localhost:1433/NOMBRE_BASE?sslmode=disable"
+lazy = true
+
+[[tools]]
+name = "execute_sql"
+source = "sqlserver"
+readonly = true
+max_rows = 1000

@@ -8,6 +8,7 @@ interface ZoneCardProps {
     tolSup: string;
     tolInf: string;
     statusColor?: string;
+    onSetpointChange?: (value: number) => void;
 }
 
 export const ZoneCard: React.FC<ZoneCardProps> = ({
@@ -16,7 +17,8 @@ export const ZoneCard: React.FC<ZoneCardProps> = ({
     sp,
     tolSup,
     tolInf,
-    statusColor = "bg-emerald-500"
+    statusColor = "bg-emerald-500",
+    onSetpointChange
 }) => {
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col transition-all hover:shadow-md hover:border-primary/20">
@@ -41,6 +43,7 @@ export const ZoneCard: React.FC<ZoneCardProps> = ({
                                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg font-mono font-bold text-lg px-3 py-2 text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                                 type="number"
                                 defaultValue={sp}
+                                onBlur={(e) => onSetpointChange?.(Number(e.target.value))}
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 font-bold text-sm">°C</span>
                         </div>

@@ -9,6 +9,10 @@ const pool = new Pool({
     user:     process.env.DB_USER     || 'tesis',
     password: process.env.DB_PASSWORD || 'tesis',
     database: process.env.DB_NAME     || 'postgres',
+    // Esquemas por módulo (espejo de los módulos del backend). Todas las tablas
+    // viven en estos esquemas; el esquema public queda vacío. El search_path
+    // permite seguir usando nombres de tabla sin calificar.
+    options: `-c search_path=${process.env.DB_SEARCH_PATH || 'core,dashboard,clamp,injection,ejection,heating,maintenance,public'}`,
 });
 
 pool.on('error', (err) => logger.error(`PostgreSQL pool error: ${err.message}`));
@@ -164,6 +168,295 @@ async function insertZonaLectura(codigoDispositivo, v) {
     );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MOLDE — lectura de setpoints (para modo de origen de datos = 'db')
+// ─────────────────────────────────────────────────────────────────────────────
+async function getMoldeConfig(codigoDispositivo = 'molde') {
+    const { rows } = await pool.query(
+        `SELECT control_encendido, torque, cambio_posicion, posicion1, posicion2, velocidad_posicion
+         FROM molde_config mc JOIN dispositivo d ON d.id = mc.dispositivo_id
+         WHERE d.codigo = $1`,
+        [codigoDispositivo]
+    );
+    if (!rows.length) return null;
+    const r = rows[0];
+    return {
+        moldControlEncendido:  Number(r.control_encendido) || 0,
+        moldTorque:            Number(r.torque) || 0,
+        moldCambioPosicion:    Number(r.cambio_posicion) || 0,
+        moldPosicion1:         Number(r.posicion1) || 0,
+        moldPosicion2:         Number(r.posicion2) || 0,
+        moldVelocidadPosicion: Number(r.velocidad_posicion) || 0,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERFILES DEL MOLDE — etapas de cierre y apertura (lectura/escritura en DB)
+// ─────────────────────────────────────────────────────────────────────────────
+async function getActivePerfilId() {
+    const { rows } = await pool.query(
+        `SELECT id FROM perfil WHERE activo = TRUE ORDER BY id LIMIT 1`
+    );
+    if (rows.length) return rows[0].id;
+    const any = await pool.query(`SELECT id FROM perfil ORDER BY id LIMIT 1`);
+    return any.rows.length ? any.rows[0].id : null;
+}
+
+async function getClosingProfile() {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) return [];
+    const { rows } = await pool.query(
+        `SELECT orden, etiqueta, inicio, velocidad, torque_max
+         FROM etapa_cierre WHERE perfil_id = $1 ORDER BY orden`,
+        [perfilId]
+    );
+    return rows.map(r => ({
+        orden:     r.orden,
+        etiqueta:  r.etiqueta,
+        inicio:    Number(r.inicio) || 0,
+        velocidad: Number(r.velocidad) || 0,
+        torqueMax: Number(r.torque_max) || 0,
+    }));
+}
+
+async function saveClosingProfile(stages) {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) throw new Error('No hay perfil activo en la base de datos');
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const s of stages) {
+            await client.query(
+                `INSERT INTO etapa_cierre
+                    (perfil_id, orden, etiqueta, inicio, velocidad, torque_max)
+                 VALUES ($1,$2,$3,$4,$5,$6)
+                 ON CONFLICT (perfil_id, orden) DO UPDATE SET
+                    etiqueta    = EXCLUDED.etiqueta,
+                    inicio      = EXCLUDED.inicio,
+                    velocidad   = EXCLUDED.velocidad,
+                    torque_max  = EXCLUDED.torque_max`,
+                [perfilId, s.orden, s.etiqueta ?? null, s.inicio ?? 0, s.velocidad ?? 0, s.torqueMax ?? 0]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+    return getClosingProfile();
+}
+
+async function getOpeningProfile() {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) return [];
+    const { rows } = await pool.query(
+        `SELECT orden, etiqueta, posicion, velocidad, aceleracion
+         FROM etapa_apertura WHERE perfil_id = $1 ORDER BY orden`,
+        [perfilId]
+    );
+    return rows.map(r => ({
+        orden:       r.orden,
+        etiqueta:    r.etiqueta,
+        posicion:    Number(r.posicion) || 0,
+        velocidad:   Number(r.velocidad) || 0,
+        aceleracion: Number(r.aceleracion) || 0,
+    }));
+}
+
+async function saveOpeningProfile(stages) {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) throw new Error('No hay perfil activo en la base de datos');
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const s of stages) {
+            await client.query(
+                `INSERT INTO etapa_apertura
+                    (perfil_id, orden, etiqueta, posicion, velocidad, aceleracion)
+                 VALUES ($1,$2,$3,$4,$5,$6)
+                 ON CONFLICT (perfil_id, orden) DO UPDATE SET
+                    etiqueta    = EXCLUDED.etiqueta,
+                    posicion    = EXCLUDED.posicion,
+                    velocidad   = EXCLUDED.velocidad,
+                    aceleracion = EXCLUDED.aceleracion`,
+                [perfilId, s.orden, s.etiqueta ?? null, s.posicion ?? 0, s.velocidad ?? 0, s.aceleracion ?? 0]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+    return getOpeningProfile();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERFIL DE INYECCIÓN — etapa_inyeccion
+// ─────────────────────────────────────────────────────────────────────────────
+async function getInjectionProfile() {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) return [];
+    const { rows } = await pool.query(
+        `SELECT orden, punto_inicio, velocidad
+         FROM etapa_inyeccion WHERE perfil_id = $1 ORDER BY orden`,
+        [perfilId]
+    );
+    return rows.map(r => ({
+        orden:       r.orden,
+        puntoInicio: Number(r.punto_inicio) || 0,
+        velocidad:   Number(r.velocidad) || 0,
+    }));
+}
+
+async function saveInjectionProfile(stages) {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) throw new Error('No hay perfil activo en la base de datos');
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const s of stages) {
+            await client.query(
+                `INSERT INTO etapa_inyeccion (perfil_id, orden, punto_inicio, velocidad)
+                 VALUES ($1,$2,$3,$4)
+                 ON CONFLICT (perfil_id, orden) DO UPDATE SET
+                    punto_inicio = EXCLUDED.punto_inicio,
+                    velocidad    = EXCLUDED.velocidad`,
+                [perfilId, s.orden, s.puntoInicio ?? 0, s.velocidad ?? 0]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    return getInjectionProfile();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERFIL DE SOSTENIMIENTO / COMPACTACIÓN — etapa_sostenimiento
+// ─────────────────────────────────────────────────────────────────────────────
+async function getHoldingProfile() {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) return [];
+    const { rows } = await pool.query(
+        `SELECT orden, presion, tiempo, velocidad, posicion
+         FROM etapa_sostenimiento WHERE perfil_id = $1 ORDER BY orden`,
+        [perfilId]
+    );
+    return rows.map(r => ({
+        orden:     r.orden,
+        presion:   Number(r.presion) || 0,
+        tiempo:    Number(r.tiempo) || 0,
+        velocidad: Number(r.velocidad) || 0,
+        posicion:  Number(r.posicion) || 0,
+    }));
+}
+
+async function saveHoldingProfile(stages) {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) throw new Error('No hay perfil activo en la base de datos');
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const s of stages) {
+            await client.query(
+                `INSERT INTO etapa_sostenimiento (perfil_id, orden, presion, tiempo, velocidad, posicion)
+                 VALUES ($1,$2,$3,$4,$5,$6)
+                 ON CONFLICT (perfil_id, orden) DO UPDATE SET
+                    presion   = EXCLUDED.presion,
+                    tiempo    = EXCLUDED.tiempo,
+                    velocidad = EXCLUDED.velocidad,
+                    posicion  = EXCLUDED.posicion`,
+                [perfilId, s.orden, s.presion ?? 0, s.tiempo ?? 0, s.velocidad ?? 0, s.posicion ?? 0]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    return getHoldingProfile();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERFIL DE EYECCIÓN — etapa_eyeccion
+// ─────────────────────────────────────────────────────────────────────────────
+async function getEjectionProfile() {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) return [];
+    const { rows } = await pool.query(
+        `SELECT orden, etiqueta, posicion, velocidad
+         FROM etapa_eyeccion WHERE perfil_id = $1 ORDER BY orden`,
+        [perfilId]
+    );
+    return rows.map(r => ({
+        orden:     r.orden,
+        etiqueta:  r.etiqueta,
+        posicion:  Number(r.posicion) || 0,
+        velocidad: Number(r.velocidad) || 0,
+    }));
+}
+
+async function saveEjectionProfile(stages) {
+    const perfilId = await getActivePerfilId();
+    if (!perfilId) throw new Error('No hay perfil activo en la base de datos');
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const s of stages) {
+            await client.query(
+                `INSERT INTO etapa_eyeccion (perfil_id, orden, etiqueta, posicion, velocidad)
+                 VALUES ($1,$2,$3,$4,$5)
+                 ON CONFLICT (perfil_id, orden) DO UPDATE SET
+                    etiqueta  = EXCLUDED.etiqueta,
+                    posicion  = EXCLUDED.posicion,
+                    velocidad = EXCLUDED.velocidad`,
+                [perfilId, s.orden, s.etiqueta ?? null, s.posicion ?? 0, s.velocidad ?? 0]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    return getEjectionProfile();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZONAS DE CALEFACCIÓN — setpoints/tolerancias (zona_calefaccion)
+// ─────────────────────────────────────────────────────────────────────────────
+async function getHeatingZones() {
+    const { rows } = await pool.query(
+        `SELECT id, nombre, setpoint, tolerancia_sup, tolerancia_inf, activa
+         FROM zona_calefaccion ORDER BY id`
+    );
+    return rows.map(r => ({
+        id:           r.id,
+        nombre:       r.nombre,
+        setpoint:     Number(r.setpoint) || 0,
+        toleranciaSup: Number(r.tolerancia_sup) || 0,
+        toleranciaInf: Number(r.tolerancia_inf) || 0,
+        activa:       r.activa,
+    }));
+}
+
+async function saveHeatingZones(zones) {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const z of zones) {
+            if (z.id === undefined || z.id === null) continue;
+            await client.query(
+                `UPDATE zona_calefaccion SET
+                    nombre         = COALESCE($2, nombre),
+                    setpoint       = $3,
+                    tolerancia_sup = $4,
+                    tolerancia_inf = $5,
+                    activa         = $6
+                 WHERE id = $1`,
+                [z.id, z.nombre ?? null, z.setpoint ?? 0, z.toleranciaSup ?? 0, z.toleranciaInf ?? 0, z.activa ?? true]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    return getHeatingZones();
+}
+
 module.exports = {
     pool,
     initSchema,
@@ -176,4 +469,20 @@ module.exports = {
     upsertMoldeConfig,
     upsertEstadoMaquina,
     insertZonaLectura,
+    getMoldeConfig,
+    getActivePerfilId,
+    getClosingProfile,
+    saveClosingProfile,
+    getOpeningProfile,
+    saveOpeningProfile,
+    getInjectionProfile,
+    saveInjectionProfile,
+    getHoldingProfile,
+    saveHoldingProfile,
+    getEjectionProfile,
+    saveEjectionProfile,
+    getHeatingZones,
+    saveHeatingZones,
 };
+
+// (esquemas por módulo: search_path configurado en el Pool)

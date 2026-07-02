@@ -5,6 +5,8 @@
 -- config/registers.json. Idempotente: usa ON CONFLICT DO NOTHING.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+SET search_path = core, dashboard, clamp, injection, ejection, heating, maintenance, public;
+
 -- ── Módulos ──────────────────────────────────────────────────────────────────
 INSERT INTO modulo (codigo, nombre, descripcion) VALUES
     ('dashboard',   'Dashboard',            'Indicadores generales y control de ciclo'),
@@ -193,7 +195,9 @@ INSERT INTO etapa_inyeccion (perfil_id, orden, punto_inicio, velocidad) VALUES
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 3, 90.25,  150.0),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 4, 40.00,  65.0),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 5, 15.00,  20.0)
-ON CONFLICT (perfil_id, orden) DO NOTHING;
+ON CONFLICT (perfil_id, orden) DO UPDATE SET
+    punto_inicio = EXCLUDED.punto_inicio,
+    velocidad    = EXCLUDED.velocidad;
 
 -- Etapas de sostenimiento (HoldingStages)
 INSERT INTO etapa_sostenimiento (perfil_id, orden, presion, tiempo, velocidad, posicion) VALUES
@@ -201,28 +205,43 @@ INSERT INTO etapa_sostenimiento (perfil_id, orden, presion, tiempo, velocidad, p
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 2, 620, 2.00, 12.0, 18.0),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 3, 500, 3.00, 8.0,  15.0),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 4, 450, 1.50, 5.0,  10.0)
-ON CONFLICT (perfil_id, orden) DO NOTHING;
+ON CONFLICT (perfil_id, orden) DO UPDATE SET
+    presion   = EXCLUDED.presion,
+    tiempo    = EXCLUDED.tiempo,
+    velocidad = EXCLUDED.velocidad,
+    posicion  = EXCLUDED.posicion;
 
 -- Etapas de cierre (ClampParameters)
 INSERT INTO etapa_cierre (perfil_id, orden, etiqueta, inicio, velocidad, torque_max) VALUES
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 1, 'Fase 1',                 1150.0, 350, 80),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 2, 'Fase 2',                 450.0,  200, 70),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 3, 'Inicio Protección Molde',120.5,  45,  15)
-ON CONFLICT (perfil_id, orden) DO NOTHING;
+ON CONFLICT (perfil_id, orden) DO UPDATE SET
+    etiqueta   = EXCLUDED.etiqueta,
+    inicio     = EXCLUDED.inicio,
+    velocidad  = EXCLUDED.velocidad,
+    torque_max = EXCLUDED.torque_max;
 
 -- Etapas de apertura (OpeningStages)
 INSERT INTO etapa_apertura (perfil_id, orden, etiqueta, posicion, velocidad, aceleracion) VALUES
-    ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 1, 'Fase 1',        450.0, 850.0, 1200),
-    ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 2, 'Fase 2',        680.0, 100.0, 600),
-    ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 3, 'Posición Final',750.0, 20.0,  300)
-ON CONFLICT (perfil_id, orden) DO NOTHING;
+    ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 1, 'Fase 1',         450.0, 850.0, 1200),
+    ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 2, 'Fase 2',         680.0, 100.0, 600),
+    ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 3, 'Posición Final', 750.0, 20.0,  300)
+ON CONFLICT (perfil_id, orden) DO UPDATE SET
+    etiqueta    = EXCLUDED.etiqueta,
+    posicion    = EXCLUDED.posicion,
+    velocidad   = EXCLUDED.velocidad,
+    aceleracion = EXCLUDED.aceleracion;
 
 -- Etapas de eyección (EjectionStages)
 INSERT INTO etapa_eyeccion (perfil_id, orden, etiqueta, posicion, velocidad) VALUES
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 1, 'Despegue',  25.0,  40.0),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 2, 'Expulsión', 120.0, 180.0),
     ((SELECT id FROM perfil WHERE nombre='Perfil por defecto'), 3, 'Final',     150.0, 20.0)
-ON CONFLICT (perfil_id, orden) DO NOTHING;
+ON CONFLICT (perfil_id, orden) DO UPDATE SET
+    etiqueta  = EXCLUDED.etiqueta,
+    posicion  = EXCLUDED.posicion,
+    velocidad = EXCLUDED.velocidad;
 
 -- ── Señales I/O (IOMonitor) ────────────────────────────────────────────────────
 INSERT INTO senal_io (modulo_id, direccion, etiqueta, es_salida, grupo) VALUES

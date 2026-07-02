@@ -3,6 +3,12 @@
  */
 
 module.exports = {
+    // ORIGEN DE DATOS DE LA PANTALLA (lecturas del módulo de molde):
+    //   'modbus' → valores en vivo del SPX5 (caché del polling Modbus)
+    //   'db'     → valores persistidos en PostgreSQL (setpoints / perfiles)
+    // Controlado por la variable de entorno DATA_SOURCE.
+    dataSource: (process.env.DATA_SOURCE || 'modbus').toLowerCase() === 'db' ? 'db' : 'modbus',
+
     // CONFIGURACIÓN DEL SPX5 (MODBUS TCP)
     modbus: {
         host: process.env.SPX5_HOST,

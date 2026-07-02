@@ -17,7 +17,7 @@ import { HeatingZonesPage } from './presentation/features/heating/pages/HeatingZ
 import { PIDDiagnosticPage } from './presentation/features/heating/pages/PIDDiagnosticPage';
 import { IOMonitorPage } from './presentation/features/maintenance/pages/IOMonitorPage';
 import { AlarmHistoryPage } from './presentation/features/maintenance/pages/AlarmHistoryPage';
-import { ServoMonitorPage } from './presentation/features/dashboard/pages/ServoMonitorPage';
+import { ModbusConfigPage } from './presentation/features/maintenance/pages/ModbusConfigPage';
 
 const App: React.FC = () => {
     return (
@@ -30,12 +30,13 @@ const App: React.FC = () => {
                         <Route index element={<DashboardPage />} />
                         <Route path="step-cycle" element={<StepCyclePage />} />
                         <Route path="time-monitor" element={<TimeMonitorPage />} />
-                        <Route path="servo-monitor" element={<ServoMonitorPage />} />
+                        <Route path="modbus-config" element={<ModbusConfigPage initialModule="dashboard" lockModule />} />
                     </Route>
                     <Route path="clamp">
                         <Route index element={<MoldGeneralPage />} />
                         <Route path="closing-profile" element={<ClampPage />} />
                         <Route path="opening-profile" element={<OpeningProfilePage />} />
+                        <Route path="modbus-config" element={<ModbusConfigPage initialModule="clamp" lockModule />} />
                     </Route>
                     <Route path="injection">
                         <Route index element={<Navigate to="/injection/general" replace />} />
@@ -44,21 +45,25 @@ const App: React.FC = () => {
                         <Route path="injection-profile" element={<InjectionProfilePage />} />
                         <Route path="holding" element={<HoldingPage />} />
                         <Route path="graphs" element={<InjectionGraphsPage />} />
+                        <Route path="modbus-config" element={<ModbusConfigPage initialModule="injection" lockModule />} />
                     </Route>
                     <Route path="ejection">
                         <Route index element={<Navigate to="/ejection/general" replace />} />
                         <Route path="general" element={<EjectorGeneralPage />} />
                         <Route path="ejection-profile" element={<EjectionProfilePage />} />
+                        <Route path="modbus-config" element={<ModbusConfigPage initialModule="ejection" lockModule />} />
                     </Route>
                     <Route path="heating">
                         <Route index element={<Navigate to="/heating/cylinder-zones" replace />} />
                         <Route path="cylinder-zones" element={<HeatingZonesPage />} />
                         <Route path="pid-diagnostic" element={<PIDDiagnosticPage />} />
+                        <Route path="modbus-config" element={<ModbusConfigPage initialModule="heating" lockModule />} />
                     </Route>
                     <Route path="maintenance">
                         <Route index element={<Navigate to="/maintenance/io-monitor" replace />} />
                         <Route path="io-monitor" element={<IOMonitorPage />} />
                         <Route path="alarm-history" element={<AlarmHistoryPage />} />
+                        <Route path="modbus-config" element={<ModbusConfigPage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />

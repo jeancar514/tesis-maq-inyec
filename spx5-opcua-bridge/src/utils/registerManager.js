@@ -54,6 +54,27 @@ class RegisterManager {
         }
         this.save();
     }
+
+    // Campos de configuración editables desde el módulo de Direcciones Modbus.
+    // No se permite cambiar 'name' ni 'type' (definen la identidad/agrupación).
+    static EDITABLE_FIELDS = [
+        'description', 'modbusType', 'modbusAddress', 'opcuaDataType',
+        'scaleFactor', 'unit', 'readable', 'writable', 'is32Bit', 'bitPosition'
+    ];
+
+    // Actualiza un registro EN SITIO (mutando el objeto existente) para que el
+    // polling Modbus/OPC UA tome la nueva dirección sin reiniciar el bridge.
+    updateRegister(name, patch) {
+        const reg = this.registers.find(r => r.name.toLowerCase() === String(name).toLowerCase());
+        if (!reg) return null;
+        for (const key of RegisterManager.EDITABLE_FIELDS) {
+            if (key in patch && patch[key] !== undefined) {
+                reg[key] = patch[key];
+            }
+        }
+        this.save();
+        return reg;
+    }
 }
 
 module.exports = new RegisterManager();

@@ -1,14 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ZoneCard } from '../components/ZoneCard';
+import { HeatingZoneRepository } from '../../../../infrastructure/repository/heating-zone.repository';
+import { HeatingZone } from '../../../../domain/models/process-profile.model';
+
+const repo = new HeatingZoneRepository();
 
 export const HeatingZonesPage: React.FC = () => {
-    const zones = [
-        { name: "Zona 1 - Alim.", pv: 210, sp: 210, ssr: 34, tolSup: "+5", tolInf: "-5" },
-        { name: "Zona 2 - Trans. 1", pv: 225, sp: 225, ssr: 12, tolSup: "+5", tolInf: "-5" },
-        { name: "Zona 3 - Trans. 2", pv: 240, sp: 240, ssr: 0, tolSup: "+5", tolInf: "-5" },
-        { name: "Zona 4 - Dosif.", pv: 240, sp: 240, ssr: 5, tolSup: "+5", tolInf: "-5" },
-        { name: "Zona 5 - Salida", pv: 235, sp: 235, ssr: 18, tolSup: "+5", tolInf: "-5" },
-    ];
+    const [zones, setZones] = useState<HeatingZone[]>([]);
+
+    useEffect(() => { repo.getZones().then(setZones).catch(() => {}); }, []);
+
+    const setSetpoint = (id: number, sp: number) => {
+        setZones(prev => {
+            const next = prev.map(z => z.id === id ? { ...z, setpoint: sp } : z);
+            repo.saveZones(next).catch(() => {});
+            return next;
+        });
+    };
 
     return (
         <div className="flex flex-col h-full gap-6 overflow-hidden">
@@ -41,8 +49,17 @@ export const HeatingZonesPage: React.FC = () => {
             {/* Zone Cards Grid */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                    {zones.map((zone, index) => (
-                        <ZoneCard key={index} {...zone} />
+                    {zones.map((zone) => (
+                        <ZoneCard
+                            key={zone.id}
+                            name={zone.nombre}
+                            pv={zone.setpoint}
+                            sp={zone.setpoint}
+                            ssr={0}
+                            tolSup={`+${zone.toleranciaSup}`}
+                            tolInf={`-${zone.toleranciaInf}`}
+                            onSetpointChange={(v) => setSetpoint(zone.id, v)}
+                        />
                     ))}
                 </div>
             </div>

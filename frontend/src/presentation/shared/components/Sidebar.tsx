@@ -37,7 +37,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
             { label: 'Vista General', icon: 'grid_view', to: '/dashboard' },
             { label: 'Ciclo de Pasos', icon: 'account_tree', to: '/dashboard/step-cycle' },
             { label: 'Monitor de Tiempo', icon: 'schedule', to: '/dashboard/time-monitor' },
-            { label: 'Servomotor', icon: 'precision_manufacturing', to: '/dashboard/servo-monitor' },
+            { label: 'Direcciones Modbus', icon: 'memory', to: '/dashboard/modbus-config' },
         ]
     },
     'clamp': {
@@ -46,6 +46,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
             { label: 'Vista General', icon: 'view_in_ar', to: '/clamp' },
             { label: 'Perfil de Cierre', icon: 'timeline', to: '/clamp/closing-profile' },
             { label: 'Perfil de Apertura', icon: 'open_in_full', to: '/clamp/opening-profile' },
+            { label: 'Direcciones Modbus', icon: 'memory', to: '/clamp/modbus-config' },
         ]
     },
     'injection': {
@@ -56,6 +57,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
             { label: 'Perfil de Inyección', icon: 'insights', to: '/injection/injection-profile' },
             { label: 'Husillo', icon: 'compress', to: '/injection/holding' },
             { label: 'Gráficos', icon: 'show_chart', to: '/injection/graphs' },
+            { label: 'Direcciones Modbus', icon: 'memory', to: '/injection/modbus-config' },
         ]
     },
     'ejection': {
@@ -63,6 +65,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
         items: [
             { label: 'Eyector', icon: 'eject', to: '/ejection/general' },
             { label: 'Perfil de Eyección', icon: 'show_chart', to: '/ejection/ejection-profile' },
+            { label: 'Direcciones Modbus', icon: 'memory', to: '/ejection/modbus-config' },
         ]
     },
     'heating': {
@@ -70,6 +73,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
         items: [
             { label: 'Zonas del Cilindro', icon: 'thermostat', to: '/heating/cylinder-zones' },
             { label: 'ON - OFF', icon: 'analytics', to: '/heating/pid-diagnostic' },
+            { label: 'Direcciones Modbus', icon: 'memory', to: '/heating/modbus-config' },
         ]
     },
     'recipes': {
@@ -84,6 +88,7 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
         items: [
             { label: 'Monitor I/O', icon: 'settings_input_component', to: '/maintenance/io-monitor' },
             { label: 'Historial de Alarmas', icon: 'history', to: '/maintenance/alarm-history' },
+            { label: 'Direcciones Modbus', icon: 'memory', to: '/maintenance/modbus-config' },
         ]
     }
 };
