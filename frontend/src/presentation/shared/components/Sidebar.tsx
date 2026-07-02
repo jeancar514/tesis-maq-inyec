@@ -88,7 +88,6 @@ const SIDEBAR_CONFIGS: Record<string, SidebarConfig> = {
         items: [
             { label: 'Monitor I/O', icon: 'settings_input_component', to: '/maintenance/io-monitor' },
             { label: 'Historial de Alarmas', icon: 'history', to: '/maintenance/alarm-history' },
-            { label: 'Direcciones Modbus', icon: 'memory', to: '/maintenance/modbus-config' },
         ]
     }
 };

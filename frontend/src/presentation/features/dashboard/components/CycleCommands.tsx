@@ -34,26 +34,44 @@ export const CycleCommands: React.FC = () => {
     };
 
     return (
-        <section className="bg-white dark:bg-slate-900/40 p-5 rounded-lg border border-primary/10 shadow-sm flex items-center justify-center gap-6 h-full">
-            {/* Start Button */}
-            <button
-                className={`w-28 h-28 rounded-full bg-emerald-500 flex flex-col items-center justify-center text-white hover:brightness-110 active:scale-95 transition-all border-4 border-white dark:border-slate-800 shadow-xl group ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                disabled={loading || lastCommand === 'start'}
-                onClick={() => sendCommand('start')}
-            >
-                <span className="material-icons text-3xl mb-0.5 group-hover:scale-110 transition-transform">play_arrow</span>
-                <span className="font-black text-xs uppercase tracking-tighter">Iniciar Ciclo</span>
-            </button>
+        <section className="bg-white dark:bg-slate-900/40 p-4 rounded-lg border border-primary/10 shadow-sm flex flex-col h-full">
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Comando de Ciclo</h3>
 
-            {/* Stop Button */}
-            <button
-                className={`w-28 h-28 rounded-full bg-red-500 flex flex-col items-center justify-center text-white hover:brightness-110 active:scale-95 transition-all border-4 border-white dark:border-slate-800 shadow-xl group ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                disabled={loading || lastCommand === 'stop'}
-                onClick={() => sendCommand('stop')}
-            >
-                <span className="material-icons text-3xl mb-0.5 group-hover:scale-110 transition-transform">stop</span>
-                <span className="font-black text-xs uppercase tracking-tighter">Paro Ciclo</span>
-            </button>
+            {/* Indicador de estado de la máquina */}
+            <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border ${lastCommand === 'start' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'}`}>
+                <span className="relative flex h-3 w-3">
+                    {lastCommand === 'start' && (
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    )}
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${lastCommand === 'start' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                </span>
+                <span className={`text-xs font-semibold ${lastCommand === 'start' ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {lastCommand === 'start' ? 'Máquina en Operación' : 'Máquina Detenida'}
+                </span>
+            </div>
+
+            {/* Botones de control */}
+            <div className="flex items-center justify-center gap-8 flex-1">
+                {/* Start Button */}
+                <button
+                    className={`w-36 h-36 rounded-full bg-emerald-500 flex flex-col items-center justify-center text-white hover:brightness-110 active:scale-95 transition-all border-4 border-white dark:border-slate-800 shadow-xl group ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    disabled={loading || lastCommand === 'start'}
+                    onClick={() => sendCommand('start')}
+                >
+                    <span className="material-icons text-4xl mb-1 group-hover:scale-110 transition-transform">play_arrow</span>
+                    <span className="font-black text-sm uppercase tracking-tighter">Iniciar Ciclo</span>
+                </button>
+
+                {/* Stop Button */}
+                <button
+                    className={`w-36 h-36 rounded-full bg-red-500 flex flex-col items-center justify-center text-white hover:brightness-110 active:scale-95 transition-all border-4 border-white dark:border-slate-800 shadow-xl group ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    disabled={loading || lastCommand === 'stop'}
+                    onClick={() => sendCommand('stop')}
+                >
+                    <span className="material-icons text-4xl mb-1 group-hover:scale-110 transition-transform">stop</span>
+                    <span className="font-black text-sm uppercase tracking-tighter">Paro Ciclo</span>
+                </button>
+            </div>
         </section>
     );
 };

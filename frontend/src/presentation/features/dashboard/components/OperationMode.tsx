@@ -35,12 +35,12 @@ export const OperationMode: React.FC = () => {
     };
 
     return (
-        <section className="bg-white dark:bg-slate-900/40 p-3 rounded-lg border border-primary/10 shadow-sm h-full flex flex-col">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Modo de Operación</h3>
-            <div className="grid grid-cols-2 gap-2">
+        <section className="bg-white dark:bg-slate-900/40 p-4 rounded-lg border border-primary/10 shadow-sm h-full flex flex-col">
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Modo de Operación</h3>
+            <div className="grid grid-cols-2 gap-2 flex-1">
                 {/* Manual Mode */}
                 <button
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${mode === 1 ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50'} transition-all group`}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 ${mode === 1 ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50'} transition-all group`}
                     disabled={loading || mode === 1}
                     onClick={() => handleChangeMode(1)}
                 >
@@ -50,11 +50,11 @@ export const OperationMode: React.FC = () => {
                         </div>
                     )}
                     <span className={`material-icons text-xl mb-1 ${mode === 1 ? 'text-primary' : 'text-slate-400 group-hover:text-primary transition-colors'}`}>pan_tool</span>
-                    <span className="font-bold text-sm">MANUAL</span>
+                    <span className="font-bold text-xs">MANUAL</span>
                 </button>
                 {/* Auto Mode */}
                 <button
-                    className={`relative flex flex-col items-center justify-center p-3 rounded-lg border-2 ${mode === 2 ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50'} transition-all group`}
+                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border-2 ${mode === 2 ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50'} transition-all group`}
                     disabled={loading || mode === 2}
                     onClick={() => handleChangeMode(2)}
                 >
@@ -64,7 +64,7 @@ export const OperationMode: React.FC = () => {
                         </div>
                     )}
                     <span className={`material-icons text-xl mb-1 ${mode === 2 ? 'text-primary' : 'text-slate-400 group-hover:text-primary transition-colors'}`}>autorenew</span>
-                    <span className="font-bold text-sm uppercase">Automático</span>
+                    <span className="font-bold text-xs uppercase">Automático</span>
                 </button>
             </div>
         </section>

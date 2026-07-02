@@ -63,7 +63,6 @@ const App: React.FC = () => {
                         <Route index element={<Navigate to="/maintenance/io-monitor" replace />} />
                         <Route path="io-monitor" element={<IOMonitorPage />} />
                         <Route path="alarm-history" element={<AlarmHistoryPage />} />
-                        <Route path="modbus-config" element={<ModbusConfigPage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -48,7 +48,7 @@ const MODBUS_TYPES: ModbusType[] = ['inputRegister', 'holdingRegister', 'coil', 
 const DATA_TYPES = ['Boolean', 'Int16', 'UInt16', 'Int32', 'UInt32', 'Float', 'Double', 'String'];
 
 const EDITABLE_FIELDS: (keyof RegisterConfig)[] = [
-    'modbusType', 'modbusAddress', 'opcuaDataType', 'scaleFactor', 'unit', 'readable', 'writable',
+    'modbusType', 'modbusAddress', 'opcuaDataType',
 ];
 
 interface ModbusConfigPageProps {
@@ -112,10 +112,6 @@ export const ModbusConfigPage: React.FC<ModbusConfigPageProps> = ({ initialModul
                     modbusType: r.modbusType,
                     modbusAddress: r.modbusAddress,
                     opcuaDataType: r.opcuaDataType,
-                    scaleFactor: r.scaleFactor,
-                    unit: r.unit,
-                    readable: r.readable,
-                    writable: r.writable,
                 };
             });
             const res = await repo.saveBatch(changes);
@@ -234,11 +230,7 @@ export const ModbusConfigPage: React.FC<ModbusConfigPageProps> = ({ initialModul
                                                 <th className="text-left font-bold py-2 px-2">Tipo Modbus</th>
                                                 <th className="text-left font-bold py-2 px-2">Dirección</th>
                                                 <th className="text-left font-bold py-2 px-2">Tipo Dato</th>
-                                                <th className="text-left font-bold py-2 px-2">Escala</th>
-                                                <th className="text-left font-bold py-2 px-2">Unidad</th>
-                                                <th className="text-center font-bold py-2 px-2">R</th>
-                                                <th className="text-center font-bold py-2 px-2">W</th>
-                                                <th className="text-right font-bold py-2 pl-2">Valor</th>
+
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -273,29 +265,7 @@ export const ModbusConfigPage: React.FC<ModbusConfigPageProps> = ({ initialModul
                                                                 {DATA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                                             </select>
                                                         </td>
-                                                        <td className="py-2 px-2">
-                                                            <input type="number" step="any" value={r.scaleFactor}
-                                                                onChange={e => setField(orig.name, 'scaleFactor', Number(e.target.value))}
-                                                                className="w-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary" />
-                                                        </td>
-                                                        <td className="py-2 px-2">
-                                                            <input type="text" value={r.unit}
-                                                                onChange={e => setField(orig.name, 'unit', e.target.value)}
-                                                                className="w-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary" />
-                                                        </td>
-                                                        <td className="py-2 px-2 text-center">
-                                                            <input type="checkbox" checked={!!r.readable}
-                                                                onChange={e => setField(orig.name, 'readable', e.target.checked)}
-                                                                className="accent-primary w-4 h-4" />
-                                                        </td>
-                                                        <td className="py-2 px-2 text-center">
-                                                            <input type="checkbox" checked={!!r.writable}
-                                                                onChange={e => setField(orig.name, 'writable', e.target.checked)}
-                                                                className="accent-primary w-4 h-4" />
-                                                        </td>
-                                                        <td className="py-2 pl-2 text-right font-mono text-slate-500 dark:text-slate-400">
-                                                            {orig.value !== undefined && orig.value !== null ? String(orig.value) : '—'}
-                                                        </td>
+
                                                     </tr>
                                                 );
                                             })}

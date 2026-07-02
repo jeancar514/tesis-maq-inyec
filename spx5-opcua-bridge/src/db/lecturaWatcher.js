@@ -3,7 +3,8 @@ const {
     insertKpiLectura,
     upsertHusilloConfig,
     upsertMoldeConfig,
-    upsertEstadoMaquina,
+    upsertModoOperacion,
+    upsertComandoCiclo,
 } = require('./dbClient');
 const registerManager = require('../utils/registerManager');
 const opcuaServer     = require('../opcua/opcuaServer');
@@ -49,12 +50,18 @@ async function saveSnapshot() {
             rendimientoCalidad: v.qualityYield,
         });
 
-        // Estado de la máquina (modo de operación + comando de ciclo)
-        await upsertEstadoMaquina({
-            modoOperacion: v.operationMode,
-            comandoCiclo:  typeof v.cycleCommand === 'boolean'
-                ? (v.cycleCommand ? 'start' : 'stop')
-                : (v.cycleCommand ? 'start' : 'stop'),
+        // Modo de operación (tabla: gen_modo_operacion)
+        await upsertModoOperacion({
+            modo: v.operationMode,
+        });
+
+        // Comando de ciclo (tabla: gen_comando_ciclo)
+        const comando = typeof v.cycleCommand === 'boolean'
+            ? (v.cycleCommand ? 'start' : 'stop')
+            : (v.cycleCommand ? 'start' : 'stop');
+        await upsertComandoCiclo({
+            comando,
+            activa: comando === 'start',
         });
 
         // Husillo (setpoints)

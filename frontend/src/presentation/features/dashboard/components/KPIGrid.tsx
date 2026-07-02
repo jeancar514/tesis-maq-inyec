@@ -16,12 +16,12 @@ const KPICard: React.FC<{
     iconColor?: string;
     accentColor?: string;
 }> = ({ label, icon, value, footer, iconColor = "text-primary", accentColor }) => (
-    <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex justify-between items-start mb-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">{label}</span>
-            <span className={`material-icons text-lg ${iconColor}`}>{icon}</span>
+    <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-start mb-2">
+            <span className="text-[11px] font-bold text-slate-500 uppercase">{label}</span>
+            <span className={`material-icons text-xl ${iconColor}`}>{icon}</span>
         </div>
-        <div className={`text-xl font-bold mb-0.5 ${accentColor || ''}`}>{value}</div>
+        <div className={`text-3xl font-bold ${accentColor || ''}`}>{value}</div>
         {footer}
     </div>
 );
@@ -74,7 +74,7 @@ export const KPIGrid: React.FC = () => {
     const data = kpiData || { cycleTime: 0, productionCount: 0, productionTarget: 5000, qualityYield: 0 };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <KPICard
                 label="Tiempo de Ciclo"
                 icon="timer"

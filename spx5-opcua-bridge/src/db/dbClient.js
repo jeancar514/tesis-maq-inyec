@@ -9,24 +9,18 @@ const pool = new Pool({
     user:     process.env.DB_USER     || 'tesis',
     password: process.env.DB_PASSWORD || 'tesis',
     database: process.env.DB_NAME     || 'postgres',
-    // Esquemas por módulo (espejo de los módulos del backend). Todas las tablas
-    // viven en estos esquemas; el esquema public queda vacío. El search_path
-    // permite seguir usando nombres de tabla sin calificar.
-    options: `-c search_path=${process.env.DB_SEARCH_PATH || 'core,dashboard,clamp,injection,ejection,heating,maintenance,public'}`,
 });
 
 pool.on('error', (err) => logger.error(`PostgreSQL pool error: ${err.message}`));
 
 const DB_DIR = path.resolve(__dirname, '../../db');
 
-// Cache de ids de dispositivo por código para no consultarlos en cada inserción
+// Cache de ids de dispositivo por código
 const _dispositivoCache = new Map();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INICIALIZACIÓN DEL ESQUEMA NORMALIZADO
+// INICIALIZACIÓN DEL ESQUEMA
 // ─────────────────────────────────────────────────────────────────────────────
-// Ejecuta los scripts SQL idempotentes (01_schema.sql + 02_seed.sql). Funciona
-// tanto si la DB se creó vacía como si ya existían las tablas.
 async function initSchema() {
     const files = ['01_schema.sql', '02_seed.sql'];
     for (const file of files) {
@@ -39,10 +33,10 @@ async function initSchema() {
         await pool.query(sql);
         logger.info(`Script SQL ejecutado: ${file}`);
     }
-    logger.info('Esquema normalizado listo en PostgreSQL');
+    logger.info('Esquema simplificado listo en PostgreSQL');
 }
 
-// Compatibilidad con el arranque anterior (protocolBridge llamaba initTable).
+// Compatibilidad con el arranque anterior
 async function initTable() {
     await initSchema();
 }
@@ -66,7 +60,7 @@ async function getServomotorId(codigoDispositivo) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SERVOMOTOR — lecturas en tiempo real
+// inj_ — SERVOMOTOR — lecturas en tiempo real
 // ─────────────────────────────────────────────────────────────────────────────
 async function insertServoLectura(codigoDispositivo, v) {
     const servoId = await getServomotorId(codigoDispositivo);
@@ -75,31 +69,31 @@ async function insertServoLectura(codigoDispositivo, v) {
         return;
     }
     await pool.query(
-        `INSERT INTO servomotor_lectura (servomotor_id, velocidad, torque, posicion, corriente, voltaje)
+        `INSERT INTO inj_servomotor_lectura (servomotor_id, velocidad, torque, posicion, corriente, voltaje)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [servoId, v.velocidad ?? null, v.torque ?? null, v.posicion ?? null, v.corriente ?? null, v.voltaje ?? null]
     );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// KPIs — snapshots
+// gen_ — KPIs — snapshots
 // ─────────────────────────────────────────────────────────────────────────────
 async function insertKpiLectura(v) {
     await pool.query(
-        `INSERT INTO kpi_lectura (tiempo_ciclo, conteo_produccion, objetivo_produccion, rendimiento_calidad)
+        `INSERT INTO gen_kpi_lectura (tiempo_ciclo, conteo_produccion, objetivo_produccion, rendimiento_calidad)
          VALUES ($1, $2, $3, $4)`,
         [v.tiempoCiclo ?? null, v.conteoProduccion ?? null, v.objetivoProduccion ?? null, v.rendimientoCalidad ?? null]
     );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HUSILLO — setpoints (upsert por dispositivo)
+// inj_ — HUSILLO — setpoints (upsert por dispositivo)
 // ─────────────────────────────────────────────────────────────────────────────
 async function upsertHusilloConfig(codigoDispositivo, v) {
     const dispId = await getDispositivoId(codigoDispositivo);
     if (!dispId) return;
     await pool.query(
-        `INSERT INTO husillo_config (dispositivo_id, control_encendido, velocidad_husillo, torque_husillo, actualizado_en)
+        `INSERT INTO inj_husillo_config (dispositivo_id, control_encendido, velocidad_husillo, torque_husillo, actualizado_en)
          VALUES ($1, $2, $3, $4, NOW())
          ON CONFLICT (dispositivo_id) DO UPDATE SET
             control_encendido = EXCLUDED.control_encendido,
@@ -111,13 +105,13 @@ async function upsertHusilloConfig(codigoDispositivo, v) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOLDE — setpoints (upsert por dispositivo)
+// clp_ — MOLDE — setpoints (upsert por dispositivo)
 // ─────────────────────────────────────────────────────────────────────────────
 async function upsertMoldeConfig(codigoDispositivo, v) {
     const dispId = await getDispositivoId(codigoDispositivo);
     if (!dispId) return;
     await pool.query(
-        `INSERT INTO molde_config
+        `INSERT INTO clp_molde_config
             (dispositivo_id, control_encendido, torque, cambio_posicion, posicion1, posicion2, velocidad_posicion, actualizado_en)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
          ON CONFLICT (dispositivo_id) DO UPDATE SET
@@ -134,47 +128,63 @@ async function upsertMoldeConfig(codigoDispositivo, v) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ESTADO DE LA MÁQUINA — modo de operación + comando de ciclo
+// gen_ — MODO DE OPERACIÓN — tabla gen_modo_operacion
 // ─────────────────────────────────────────────────────────────────────────────
-async function upsertEstadoMaquina(v) {
+async function upsertModoOperacion(v) {
     const dispId = await getDispositivoId('maquina');
     if (!dispId) return;
     await pool.query(
-        `INSERT INTO estado_maquina (dispositivo_id, modo_operacion, comando_ciclo, actualizado_en)
-         VALUES ($1, $2, $3, NOW())
+        `INSERT INTO gen_modo_operacion (dispositivo_id, modo, actualizado_en)
+         VALUES ($1, $2, NOW())
          ON CONFLICT (dispositivo_id) DO UPDATE SET
-            modo_operacion = COALESCE(EXCLUDED.modo_operacion, estado_maquina.modo_operacion),
-            comando_ciclo  = COALESCE(EXCLUDED.comando_ciclo, estado_maquina.comando_ciclo),
+            modo           = COALESCE(EXCLUDED.modo, gen_modo_operacion.modo),
             actualizado_en = NOW()`,
-        [dispId, v.modoOperacion ?? null, v.comandoCiclo ?? null]
+        [dispId, v.modo ?? null]
     );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ZONA DE CALEFACCIÓN — lecturas en tiempo real
+// gen_ — COMANDO DE CICLO — tabla gen_comando_ciclo
+// ─────────────────────────────────────────────────────────────────────────────
+async function upsertComandoCiclo(v) {
+    const dispId = await getDispositivoId('maquina');
+    if (!dispId) return;
+    await pool.query(
+        `INSERT INTO gen_comando_ciclo (dispositivo_id, comando, activa, actualizado_en)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (dispositivo_id) DO UPDATE SET
+            comando        = COALESCE(EXCLUDED.comando, gen_comando_ciclo.comando),
+            activa         = COALESCE(EXCLUDED.activa, gen_comando_ciclo.activa),
+            actualizado_en = NOW()`,
+        [dispId, v.comando ?? null, v.activa ?? false]
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// hea_ — ZONA DE CALEFACCIÓN — lecturas en tiempo real
 // ─────────────────────────────────────────────────────────────────────────────
 async function insertZonaLectura(codigoDispositivo, v) {
     const { rows } = await pool.query(
-        `SELECT z.id FROM zona_calefaccion z
+        `SELECT z.id FROM hea_zona_calefaccion z
          JOIN dispositivo d ON d.id = z.dispositivo_id
          WHERE d.codigo = $1`,
         [codigoDispositivo]
     );
     if (!rows.length) return;
     await pool.query(
-        `INSERT INTO zona_calefaccion_lectura (zona_id, temperatura_pv, salida_ssr)
+        `INSERT INTO hea_zona_lectura (zona_id, temperatura_pv, salida_ssr)
          VALUES ($1, $2, $3)`,
         [rows[0].id, v.temperaturaPv ?? null, v.salidaSsr ?? null]
     );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOLDE — lectura de setpoints (para modo de origen de datos = 'db')
+// clp_ — MOLDE — lectura de setpoints
 // ─────────────────────────────────────────────────────────────────────────────
 async function getMoldeConfig(codigoDispositivo = 'molde') {
     const { rows } = await pool.query(
         `SELECT control_encendido, torque, cambio_posicion, posicion1, posicion2, velocidad_posicion
-         FROM molde_config mc JOIN dispositivo d ON d.id = mc.dispositivo_id
+         FROM clp_molde_config mc JOIN dispositivo d ON d.id = mc.dispositivo_id
          WHERE d.codigo = $1`,
         [codigoDispositivo]
     );
@@ -191,7 +201,7 @@ async function getMoldeConfig(codigoDispositivo = 'molde') {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PERFILES DEL MOLDE — etapas de cierre y apertura (lectura/escritura en DB)
+// PERFIL ACTIVO
 // ─────────────────────────────────────────────────────────────────────────────
 async function getActivePerfilId() {
     const { rows } = await pool.query(
@@ -202,12 +212,15 @@ async function getActivePerfilId() {
     return any.rows.length ? any.rows[0].id : null;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// clp_ — PERFIL DE CIERRE — etapas cierre/apertura
+// ─────────────────────────────────────────────────────────────────────────────
 async function getClosingProfile() {
     const perfilId = await getActivePerfilId();
     if (!perfilId) return [];
     const { rows } = await pool.query(
         `SELECT orden, etiqueta, inicio, velocidad, torque_max
-         FROM etapa_cierre WHERE perfil_id = $1 ORDER BY orden`,
+         FROM clp_etapa_cierre WHERE perfil_id = $1 ORDER BY orden`,
         [perfilId]
     );
     return rows.map(r => ({
@@ -227,7 +240,7 @@ async function saveClosingProfile(stages) {
         await client.query('BEGIN');
         for (const s of stages) {
             await client.query(
-                `INSERT INTO etapa_cierre
+                `INSERT INTO clp_etapa_cierre
                     (perfil_id, orden, etiqueta, inicio, velocidad, torque_max)
                  VALUES ($1,$2,$3,$4,$5,$6)
                  ON CONFLICT (perfil_id, orden) DO UPDATE SET
@@ -253,7 +266,7 @@ async function getOpeningProfile() {
     if (!perfilId) return [];
     const { rows } = await pool.query(
         `SELECT orden, etiqueta, posicion, velocidad, aceleracion
-         FROM etapa_apertura WHERE perfil_id = $1 ORDER BY orden`,
+         FROM clp_etapa_apertura WHERE perfil_id = $1 ORDER BY orden`,
         [perfilId]
     );
     return rows.map(r => ({
@@ -273,7 +286,7 @@ async function saveOpeningProfile(stages) {
         await client.query('BEGIN');
         for (const s of stages) {
             await client.query(
-                `INSERT INTO etapa_apertura
+                `INSERT INTO clp_etapa_apertura
                     (perfil_id, orden, etiqueta, posicion, velocidad, aceleracion)
                  VALUES ($1,$2,$3,$4,$5,$6)
                  ON CONFLICT (perfil_id, orden) DO UPDATE SET
@@ -295,14 +308,14 @@ async function saveOpeningProfile(stages) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PERFIL DE INYECCIÓN — etapa_inyeccion
+// inj_ — PERFIL DE INYECCIÓN — etapas
 // ─────────────────────────────────────────────────────────────────────────────
 async function getInjectionProfile() {
     const perfilId = await getActivePerfilId();
     if (!perfilId) return [];
     const { rows } = await pool.query(
         `SELECT orden, punto_inicio, velocidad
-         FROM etapa_inyeccion WHERE perfil_id = $1 ORDER BY orden`,
+         FROM inj_etapa_inyeccion WHERE perfil_id = $1 ORDER BY orden`,
         [perfilId]
     );
     return rows.map(r => ({
@@ -320,7 +333,7 @@ async function saveInjectionProfile(stages) {
         await client.query('BEGIN');
         for (const s of stages) {
             await client.query(
-                `INSERT INTO etapa_inyeccion (perfil_id, orden, punto_inicio, velocidad)
+                `INSERT INTO inj_etapa_inyeccion (perfil_id, orden, punto_inicio, velocidad)
                  VALUES ($1,$2,$3,$4)
                  ON CONFLICT (perfil_id, orden) DO UPDATE SET
                     punto_inicio = EXCLUDED.punto_inicio,
@@ -334,14 +347,14 @@ async function saveInjectionProfile(stages) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PERFIL DE SOSTENIMIENTO / COMPACTACIÓN — etapa_sostenimiento
+// inj_ — PERFIL DE SOSTENIMIENTO — etapas
 // ─────────────────────────────────────────────────────────────────────────────
 async function getHoldingProfile() {
     const perfilId = await getActivePerfilId();
     if (!perfilId) return [];
     const { rows } = await pool.query(
         `SELECT orden, presion, tiempo, velocidad, posicion
-         FROM etapa_sostenimiento WHERE perfil_id = $1 ORDER BY orden`,
+         FROM inj_etapa_sostenimiento WHERE perfil_id = $1 ORDER BY orden`,
         [perfilId]
     );
     return rows.map(r => ({
@@ -361,7 +374,7 @@ async function saveHoldingProfile(stages) {
         await client.query('BEGIN');
         for (const s of stages) {
             await client.query(
-                `INSERT INTO etapa_sostenimiento (perfil_id, orden, presion, tiempo, velocidad, posicion)
+                `INSERT INTO inj_etapa_sostenimiento (perfil_id, orden, presion, tiempo, velocidad, posicion)
                  VALUES ($1,$2,$3,$4,$5,$6)
                  ON CONFLICT (perfil_id, orden) DO UPDATE SET
                     presion   = EXCLUDED.presion,
@@ -377,14 +390,14 @@ async function saveHoldingProfile(stages) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PERFIL DE EYECCIÓN — etapa_eyeccion
+// ejc_ — PERFIL DE EYECCIÓN — etapas
 // ─────────────────────────────────────────────────────────────────────────────
 async function getEjectionProfile() {
     const perfilId = await getActivePerfilId();
     if (!perfilId) return [];
     const { rows } = await pool.query(
         `SELECT orden, etiqueta, posicion, velocidad
-         FROM etapa_eyeccion WHERE perfil_id = $1 ORDER BY orden`,
+         FROM ejc_etapa_eyeccion WHERE perfil_id = $1 ORDER BY orden`,
         [perfilId]
     );
     return rows.map(r => ({
@@ -403,7 +416,7 @@ async function saveEjectionProfile(stages) {
         await client.query('BEGIN');
         for (const s of stages) {
             await client.query(
-                `INSERT INTO etapa_eyeccion (perfil_id, orden, etiqueta, posicion, velocidad)
+                `INSERT INTO ejc_etapa_eyeccion (perfil_id, orden, etiqueta, posicion, velocidad)
                  VALUES ($1,$2,$3,$4,$5)
                  ON CONFLICT (perfil_id, orden) DO UPDATE SET
                     etiqueta  = EXCLUDED.etiqueta,
@@ -418,12 +431,12 @@ async function saveEjectionProfile(stages) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ZONAS DE CALEFACCIÓN — setpoints/tolerancias (zona_calefaccion)
+// hea_ — ZONAS DE CALEFACCIÓN — setpoints/tolerancias
 // ─────────────────────────────────────────────────────────────────────────────
 async function getHeatingZones() {
     const { rows } = await pool.query(
         `SELECT id, nombre, setpoint, tolerancia_sup, tolerancia_inf, activa
-         FROM zona_calefaccion ORDER BY id`
+         FROM hea_zona_calefaccion ORDER BY id`
     );
     return rows.map(r => ({
         id:           r.id,
@@ -442,7 +455,7 @@ async function saveHeatingZones(zones) {
         for (const z of zones) {
             if (z.id === undefined || z.id === null) continue;
             await client.query(
-                `UPDATE zona_calefaccion SET
+                `UPDATE hea_zona_calefaccion SET
                     nombre         = COALESCE($2, nombre),
                     setpoint       = $3,
                     tolerancia_sup = $4,
@@ -457,17 +470,89 @@ async function saveHeatingZones(zones) {
     return getHeatingZones();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// gen_ — KPIs desde DB
+// ─────────────────────────────────────────────────────────────────────────────
+async function getKpiLectura() {
+    const { rows } = await pool.query(
+        `SELECT tiempo_ciclo, conteo_produccion, objetivo_produccion, rendimiento_calidad
+         FROM gen_kpi_lectura ORDER BY capturado_en DESC LIMIT 1`
+    );
+    if (!rows.length) return null;
+    const r = rows[0];
+    return {
+        cycleTime:        Number(r.tiempo_ciclo) || 0,
+        productionCount:  Number(r.conteo_produccion) || 0,
+        productionTarget: Number(r.objetivo_produccion) || 5000,
+        qualityYield:     Number(r.rendimiento_calidad) || 0,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// gen_ — MODO DE OPERACIÓN desde DB
+// ─────────────────────────────────────────────────────────────────────────────
+async function getModoOperacion() {
+    const { rows } = await pool.query(
+        `SELECT modo FROM gen_modo_operacion ORDER BY actualizado_en DESC LIMIT 1`
+    );
+    if (!rows.length) return null;
+    return { mode: Number(rows[0].modo) || 1 };
+}
+
+async function updateModoOperacion(mode) {
+    await pool.query(
+        `UPDATE gen_modo_operacion SET modo = $1, actualizado_en = NOW()
+         WHERE id = (SELECT id FROM gen_modo_operacion ORDER BY id LIMIT 1)`,
+        [mode]
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// gen_ — COMANDO DE CICLO desde DB
+// ─────────────────────────────────────────────────────────────────────────────
+async function getComandoCiclo() {
+    const { rows } = await pool.query(
+        `SELECT comando, activa FROM gen_comando_ciclo ORDER BY actualizado_en DESC LIMIT 1`
+    );
+    if (!rows.length) return null;
+    return {
+        command: rows[0].comando || 'stop',
+        active:  rows[0].activa ?? false,
+    };
+}
+
+async function updateComandoCiclo(command) {
+    const activa = command === 'start';
+    await pool.query(
+        `UPDATE gen_comando_ciclo SET comando = $1, activa = $2, actualizado_en = NOW()
+         WHERE id = (SELECT id FROM gen_comando_ciclo ORDER BY id LIMIT 1)`,
+        [command, activa]
+    );
+}
+
+// Función de conveniencia — combina modo + comando (para GET /api/kpis)
+async function getEstadoMaquina() {
+    const modoOp = await getModoOperacion();
+    const cmdCiclo = await getComandoCiclo();
+    return {
+        mode:    modoOp?.mode ?? 1,
+        command: cmdCiclo?.command ?? 'stop',
+        active:  cmdCiclo?.active ?? false,
+    };
+}
+
 module.exports = {
     pool,
     initSchema,
-    initTable,            // alias de compatibilidad
+    initTable,
     getDispositivoId,
     getServomotorId,
     insertServoLectura,
     insertKpiLectura,
     upsertHusilloConfig,
     upsertMoldeConfig,
-    upsertEstadoMaquina,
+    upsertModoOperacion,
+    upsertComandoCiclo,
     insertZonaLectura,
     getMoldeConfig,
     getActivePerfilId,
@@ -483,6 +568,10 @@ module.exports = {
     saveEjectionProfile,
     getHeatingZones,
     saveHeatingZones,
+    getKpiLectura,
+    getModoOperacion,
+    updateModoOperacion,
+    getComandoCiclo,
+    updateComandoCiclo,
+    getEstadoMaquina,
 };
-
-// (esquemas por módulo: search_path configurado en el Pool)
