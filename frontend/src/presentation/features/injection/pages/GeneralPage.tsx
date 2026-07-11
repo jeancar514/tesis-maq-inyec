@@ -1,5 +1,5 @@
 import React from 'react';
-import { ServoVariableGrid } from '../components/ServoVariableGrid';
+import { ServoVariableGrid } from '../../../shared/components/ServoVariableGrid';
 import { DriveCanvas } from '../components/DriveCanvas';
 import { ScrewControlPanel } from '../components/ScrewControlPanel';
 

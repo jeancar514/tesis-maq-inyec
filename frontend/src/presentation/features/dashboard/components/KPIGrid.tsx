@@ -84,7 +84,7 @@ export const KPIGrid: React.FC = () => {
             <KPICard
                 label="Producción"
                 icon="inventory_2"
-                value={<>{data.productionCount} <span className="text-xs font-normal text-slate-400">/ {5000}</span></>}
+                value={<>{data.productionCount} <span className="text-xs font-normal text-slate-400">/ {data.productionTarget}</span></>}
             />
 
             <KPICard

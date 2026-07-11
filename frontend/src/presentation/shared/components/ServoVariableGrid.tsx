@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { ServoRepository } from '../../../../infrastructure/repository/servo.repository';
-import { GetServoDataUseCase } from '../../../../domain/usecase/get-servo-data.usecase';
-import { servoWebSocketService } from '../../../../infrastructure/helpers/servo-websocket.service';
-import { ServoData } from '../../../../domain/models/servo.model';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ServoRepository } from '../../../infrastructure/repository/servo.repository';
+import { GetServoDataUseCase } from '../../../domain/usecase/get-servo-data.usecase';
+import { ServoData } from '../../../domain/models/servo.model';
+import { ServoGateway } from '../../../domain/gateway/servo.gateway';
 
-const servoRepository = new ServoRepository();
-const getServoDataUseCase = new GetServoDataUseCase(servoRepository);
+interface ServoVariableGridProps {
+    /** Gateway del servo a mostrar. Por defecto el de Inyección (servomotor_1). */
+    servoGateway?: ServoGateway;
+}
 
 // Escala los valores raw del servo aplicando un factor de 0.1
 const scaleServo = (value: number): number => parseFloat((value * 0.1).toFixed(2));
@@ -26,28 +28,34 @@ const ServoCard: React.FC<{
     </div>
 );
 
-export const ServoVariableGrid: React.FC = () => {
+export const ServoVariableGrid: React.FC<ServoVariableGridProps> = ({ servoGateway }) => {
     const [servoData, setServoData] = useState<ServoData | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
+    // Gateway por defecto: servo de Inyección (servomotor_1).
+    const gateway = useMemo(() => servoGateway ?? new ServoRepository(), [servoGateway]);
+    const useCase = useMemo(() => new GetServoDataUseCase(gateway), [gateway]);
+
     useEffect(() => {
         // Carga inicial por HTTP
-        getServoDataUseCase.execute()
+        useCase.execute()
             .then(setServoData)
             .catch(err => console.error('Error cargando servo:', err))
             .finally(() => setLoading(false));
 
-        // Suscripción WebSocket — singleton directo para evitar instancias duplicadas
-        servoWebSocketService.connect();
-        const unsubscribe = servoWebSocketService.subscribe((data) => {
+        // Suscripción WebSocket del servo correspondiente (inyección o molde)
+        gateway.connectWebSocket();
+        const unsubscribe = gateway.subscribeToServoData((data) => {
             setServoData(data);
             setLoading(false);
         });
 
+        // Nota: no se desconecta el WebSocket en el cleanup (comportamiento original)
+        // para no cortar el singleton compartido si hay otras vistas suscritas.
         return () => {
             unsubscribe();
         };
-    }, []);
+    }, [gateway, useCase]);
 
     if (loading) {
         return (

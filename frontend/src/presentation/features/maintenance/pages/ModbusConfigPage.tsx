@@ -4,45 +4,117 @@ import { RegisterConfig, RegisterPatch, ModbusType } from '../../../../domain/mo
 
 const repo = new RegisterConfigRepository();
 
-/* Mapeo: módulo del FooterNav → submódulos (tipos de registro) del Sidebar */
+/* Mapeo: módulo del FooterNav → secciones del Sidebar → grupos (tipos de registro).
+   Cada sección refleja una entrada del Sidebar del módulo, para que sus direcciones
+   Modbus se configuren agrupadas igual que en la navegación. */
+interface GroupDef { type: string; label: string; }
+interface SectionDef { key: string; label: string; icon: string; groups: GroupDef[]; }
 interface ModuleDef {
     key: string;
     label: string;
     icon: string;
-    groups: Array<{ type: string; label: string }>;
+    sections: SectionDef[];
 }
 
 const MODULES: ModuleDef[] = [
     {
-        key: 'dashboard', label: 'General', icon: 'dashboard', groups: [
-            { type: 'kpis', label: 'KPIs / Producción' },
-            { type: 'operation_mode', label: 'Modo de Operación' },
-            { type: 'cycle_command', label: 'Comando de Ciclo' },
+        key: 'dashboard', label: 'General', icon: 'dashboard', sections: [
+            {
+                key: 'vista-general', label: 'Vista General', icon: 'grid_view', groups: [
+                    { type: 'kpis', label: 'KPIs / Producción' },
+                    { type: 'operation_mode', label: 'Modo de Operación' },
+                    { type: 'cycle_command', label: 'Comando de Ciclo' },
+                ]
+            },
+            {
+                key: 'ciclo-pasos', label: 'Ciclo de Pasos', icon: 'account_tree', groups: [
+                    { type: 'step_cycle', label: 'Pasos del Ciclo' },
+                ]
+            },
+            {
+                key: 'monitor-tiempo', label: 'Monitor de Tiempo', icon: 'schedule', groups: [
+                    { type: 'phase_timing', label: 'Tiempos por Fase' },
+                ]
+            },
         ]
     },
     {
-        key: 'clamp', label: 'Molde', icon: 'view_sidebar', groups: [
-            { type: 'mold_control', label: 'Control de Molde' },
+        key: 'clamp', label: 'Molde', icon: 'view_sidebar', sections: [
+            {
+                key: 'vista-general', label: 'Vista General', icon: 'view_in_ar', groups: [
+                    { type: 'mold_control', label: 'Control de Molde' },
+                ]
+            },
+            {
+                key: 'perfil-cierre', label: 'Perfil de Cierre', icon: 'timeline', groups: [
+                    { type: 'clamp_closing_profile', label: 'Etapas de Cierre' },
+                ]
+            },
+            {
+                key: 'perfil-apertura', label: 'Perfil de Apertura', icon: 'open_in_full', groups: [
+                    { type: 'clamp_opening_profile', label: 'Etapas de Apertura' },
+                ]
+            },
         ]
     },
     {
-        key: 'injection', label: 'Inyección', icon: 'input', groups: [
-            { type: 'servo', label: 'Servomotor (lecturas)' },
-            { type: 'screw_control', label: 'Husillo' },
-            { type: 'carriage_control', label: 'Carro de Inyección' },
+        key: 'injection', label: 'Inyección', icon: 'input', sections: [
+            {
+                key: 'general', label: 'General', icon: 'monitor_heart', groups: [
+                    { type: 'servo', label: 'Servomotor (lecturas)' },
+                ]
+            },
+            {
+                key: 'carro', label: 'Carro de Inyección', icon: 'precision_manufacturing', groups: [
+                    { type: 'carriage_control', label: 'Carro de Inyección' },
+                ]
+            },
+            {
+                key: 'perfil-inyeccion', label: 'Perfil de Inyección', icon: 'insights', groups: [
+                    { type: 'injection_profile', label: 'Etapas de Inyección' },
+                ]
+            },
+            {
+                key: 'husillo', label: 'Husillo', icon: 'compress', groups: [
+                    { type: 'screw_control', label: 'Husillo' },
+                    { type: 'holding_profile', label: 'Etapas de Sostenimiento' },
+                ]
+            },
+            {
+                key: 'graficos', label: 'Gráficos', icon: 'show_chart', groups: [],
+            },
         ]
     },
     {
-        key: 'ejection', label: 'Eyección', icon: 'eject', groups: [
-            { type: 'ejector_control', label: 'Eyector' },
+        key: 'ejection', label: 'Eyección', icon: 'eject', sections: [
+            {
+                key: 'eyector', label: 'Eyector', icon: 'eject', groups: [
+                    { type: 'ejector_control', label: 'Eyector' },
+                ]
+            },
+            {
+                key: 'perfil-eyeccion', label: 'Perfil de Eyección', icon: 'show_chart', groups: [
+                    { type: 'ejection_profile', label: 'Etapas de Eyección' },
+                ]
+            },
         ]
     },
     {
-        key: 'heating', label: 'Temperaturas', icon: 'thermostat', groups: [
-            { type: 'heating', label: 'Zonas del Cilindro' },
+        key: 'heating', label: 'Temperaturas', icon: 'thermostat', sections: [
+            {
+                key: 'zonas', label: 'Zonas del Cilindro', icon: 'thermostat', groups: [
+                    { type: 'heating', label: 'Zonas del Cilindro' },
+                ]
+            },
+            {
+                key: 'on-off', label: 'ON - OFF', icon: 'analytics', groups: [],
+            },
         ]
     },
 ];
+
+/* Aplana los grupos de todas las secciones de un módulo. */
+const moduleGroups = (m: ModuleDef): GroupDef[] => m.sections.flatMap(s => s.groups);
 
 const MODBUS_TYPES: ModbusType[] = ['inputRegister', 'holdingRegister', 'coil', 'discreteInput'];
 const DATA_TYPES = ['Boolean', 'Int16', 'UInt16', 'Int32', 'UInt32', 'Float', 'Double', 'String'];
@@ -142,6 +214,68 @@ export const ModbusConfigPage: React.FC<ModbusConfigPageProps> = ({ initialModul
     const activeDef = MODULES.find(m => m.key === activeModule)!;
     const byType = (type: string) => registers.filter(r => r.type === type);
 
+    const renderGroupCard = (group: GroupDef) => {
+        const rows = byType(group.type);
+        if (rows.length === 0) return null;
+        return (
+            <div key={group.type} className="surface-card panel-accent p-4 pl-5">
+                <div className="flex items-center gap-2 mb-3">
+                    <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">{group.label}</h2>
+                    <span className="text-[10px] font-mono text-slate-400">{group.type}</span>
+                    <span className="text-[10px] text-slate-400 ml-auto">{rows.length} variables</span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                        <thead>
+                            <tr className="text-[10px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                <th className="text-left font-bold py-2 pr-2">Variable</th>
+                                <th className="text-left font-bold py-2 px-2">Tipo Modbus</th>
+                                <th className="text-left font-bold py-2 px-2">Dirección</th>
+                                <th className="text-left font-bold py-2 px-2">Tipo Dato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map(orig => {
+                                const r = draft[orig.name] || orig;
+                                const mod = isModified(orig.name);
+                                return (
+                                    <tr key={orig.name} className={`border-b border-slate-100 dark:border-slate-800/60 ${mod ? 'bg-amber-50/60 dark:bg-amber-500/5' : ''}`}>
+                                        <td className="py-2 pr-2">
+                                            <div className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                                                {mod && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                                                {orig.name}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 max-w-[180px] truncate">{orig.description}</div>
+                                        </td>
+                                        <td className="py-2 px-2">
+                                            <select value={r.modbusType}
+                                                onChange={e => setField(orig.name, 'modbusType', e.target.value)}
+                                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary">
+                                                {MODBUS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                            </select>
+                                        </td>
+                                        <td className="py-2 px-2">
+                                            <input type="number" min={0} max={65535} value={r.modbusAddress}
+                                                onChange={e => setField(orig.name, 'modbusAddress', Number(e.target.value))}
+                                                className="w-20 bg-white dark:bg-slate-900 border-2 border-primary/30 rounded-md px-2 py-1 text-xs font-mono font-bold text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                                        </td>
+                                        <td className="py-2 px-2">
+                                            <select value={r.opcuaDataType}
+                                                onChange={e => setField(orig.name, 'opcuaDataType', e.target.value)}
+                                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary">
+                                                {DATA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col h-full gap-3 overflow-hidden">
             {/* Header */}
@@ -180,8 +314,8 @@ export const ModbusConfigPage: React.FC<ModbusConfigPageProps> = ({ initialModul
             {!lockModule && (
             <div className="shrink-0 flex gap-1.5 flex-wrap">
                 {MODULES.map(m => {
-                    const count = m.groups.reduce((acc, g) => acc + byType(g.type).length, 0);
-                    const mod = m.groups.some(g => byType(g.type).some(r => isModified(r.name)));
+                    const count = moduleGroups(m).reduce((acc, g) => acc + byType(g.type).length, 0);
+                    const mod = moduleGroups(m).some(g => byType(g.type).some(r => isModified(r.name)));
                     return (
                         <button key={m.key} onClick={() => setActiveModule(m.key)}
                             className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeModule === m.key
@@ -207,71 +341,25 @@ export const ModbusConfigPage: React.FC<ModbusConfigPageProps> = ({ initialModul
                     <div className="surface-card p-6 text-center text-sm text-slate-400">
                         No se pudieron cargar los registros. ¿Está corriendo el bridge (puerto 3000)?
                     </div>
-                ) : activeDef.groups.every(group => byType(group.type).length === 0) ? (
-                    <div className="surface-card p-6 text-center text-sm text-slate-400">
-                        Este módulo no expone variables Modbus configurables. Sus parámetros se gestionan desde la base de datos.
-                    </div>
                 ) : (
-                    activeDef.groups.map(group => {
-                        const rows = byType(group.type);
-                        if (rows.length === 0) return null;
+                    activeDef.sections.map(section => {
+                        const sectionRows = section.groups.flatMap(g => byType(g.type));
                         return (
-                            <div key={group.type} className="surface-card panel-accent p-4 pl-5">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">{group.label}</h2>
-                                    <span className="text-[10px] font-mono text-slate-400">{group.type}</span>
-                                    <span className="text-[10px] text-slate-400 ml-auto">{rows.length} variables</span>
+                            <div key={section.key} className="space-y-2.5">
+                                {/* Encabezado de sección (espejo del Sidebar del módulo) */}
+                                <div className="flex items-center gap-2 pt-1">
+                                    <span className="h-4 w-1 rounded-full bg-gradient-to-b from-primary to-accent" />
+                                    <span className="material-icons text-primary text-base">{section.icon}</span>
+                                    <h2 className="text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">{section.label}</h2>
+                                    <span className="text-[10px] text-slate-400 ml-auto">{sectionRows.length} variables</span>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-xs">
-                                        <thead>
-                                            <tr className="text-[10px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
-                                                <th className="text-left font-bold py-2 pr-2">Variable</th>
-                                                <th className="text-left font-bold py-2 px-2">Tipo Modbus</th>
-                                                <th className="text-left font-bold py-2 px-2">Dirección</th>
-                                                <th className="text-left font-bold py-2 px-2">Tipo Dato</th>
-
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {rows.map(orig => {
-                                                const r = draft[orig.name] || orig;
-                                                const mod = isModified(orig.name);
-                                                return (
-                                                    <tr key={orig.name} className={`border-b border-slate-100 dark:border-slate-800/60 ${mod ? 'bg-amber-50/60 dark:bg-amber-500/5' : ''}`}>
-                                                        <td className="py-2 pr-2">
-                                                            <div className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                                                                {mod && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
-                                                                {orig.name}
-                                                            </div>
-                                                            <div className="text-[10px] text-slate-400 max-w-[180px] truncate">{orig.description}</div>
-                                                        </td>
-                                                        <td className="py-2 px-2">
-                                                            <select value={r.modbusType}
-                                                                onChange={e => setField(orig.name, 'modbusType', e.target.value)}
-                                                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary">
-                                                                {MODBUS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </select>
-                                                        </td>
-                                                        <td className="py-2 px-2">
-                                                            <input type="number" min={0} max={65535} value={r.modbusAddress}
-                                                                onChange={e => setField(orig.name, 'modbusAddress', Number(e.target.value))}
-                                                                className="w-20 bg-white dark:bg-slate-900 border-2 border-primary/30 rounded-md px-2 py-1 text-xs font-mono font-bold text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-                                                        </td>
-                                                        <td className="py-2 px-2">
-                                                            <select value={r.opcuaDataType}
-                                                                onChange={e => setField(orig.name, 'opcuaDataType', e.target.value)}
-                                                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary">
-                                                                {DATA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </select>
-                                                        </td>
-
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {sectionRows.length === 0 ? (
+                                    <div className="surface-card p-4 text-center text-[11px] text-slate-400">
+                                        Sin variables Modbus configurables. Sus parámetros se gestionan desde la base de datos.
+                                    </div>
+                                ) : (
+                                    section.groups.map(group => renderGroupCard(group))
+                                )}
                             </div>
                         );
                     })

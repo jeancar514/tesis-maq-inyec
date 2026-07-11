@@ -13,8 +13,7 @@ export class OperationModeRepository implements OperationModeGateway {
     }
 
     async getOperationMode(): Promise<OperationMode> {
-        // No hay GET, pero podrías implementarlo si el backend lo soporta
-        return { mode: 2 };
+        return await httpService.get<OperationMode>(OPERATION_MODE_ENDPOINT);
     }
 
     async setOperationMode(mode: number): Promise<OperationMode> {

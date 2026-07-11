@@ -3,6 +3,8 @@ const {
     insertKpiLectura,
     upsertHusilloConfig,
     upsertMoldeConfig,
+    upsertCarroConfig,
+    upsertEyectorConfig,
     upsertModoOperacion,
     upsertComandoCiclo,
 } = require('./dbClient');
@@ -33,8 +35,13 @@ async function saveSnapshot() {
     try {
         const v = snapshotValues();
 
-        // Servomotor 1 (registros tipo 'servo' del bridge actual)
-        await insertServoLectura('servomotor_1', {
+        // Servomotor de inyección (registros tipo 'servo' del bridge actual).
+        // Nota: el SPX5 solo expone hoy un único juego de registros Modbus tipo
+        // "servo" (velocidad/torque/posición/corriente/voltaje), correspondiente
+        // al eje de inyección. El servomotor de molde (clamp.vgn_servomotor_lectura)
+        // no tiene aún registros físicos dedicados, por lo que no se alimenta desde
+        // aquí para evitar duplicar la misma lectura bajo una identidad distinta.
+        await insertServoLectura({
             velocidad: v.speed,
             torque:    v.torque,
             posicion:  v.position,
@@ -79,6 +86,26 @@ async function saveSnapshot() {
             posicion1:         v.moldPosicion1,
             posicion2:         v.moldPosicion2,
             velocidadPosicion: v.moldVelocidadPosicion,
+        });
+
+        // Carro de inyección (setpoints)
+        await upsertCarroConfig({
+            controlEncendido:  v.carriageControlEncendido,
+            torque:            v.carriageTorque,
+            cambioPosicion:    v.carriageCambioPosicion,
+            posicion1:         v.carriagePosicion1,
+            posicion2:         v.carriagePosicion2,
+            velocidadPosicion: v.carriageVelocidadPosicion,
+        });
+
+        // Eyector (setpoints)
+        await upsertEyectorConfig({
+            controlEncendido:  v.ejectorControlEncendido,
+            torque:            v.ejectorTorque,
+            cambioPosicion:    v.ejectorCambioPosicion,
+            posicion1:         v.ejectorPosicion1,
+            posicion2:         v.ejectorPosicion2,
+            velocidadPosicion: v.ejectorVelocidadPosicion,
         });
 
         logger.info('Snapshot normalizado guardado en DB');

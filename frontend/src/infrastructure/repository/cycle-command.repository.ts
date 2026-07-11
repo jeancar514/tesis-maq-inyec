@@ -12,6 +12,10 @@ export class CycleCommandRepository implements CycleCommandGateway {
         this.wsService = wsService;
     }
 
+    async getCycleCommand(): Promise<CycleCommand> {
+        return await httpService.get<CycleCommand>(CYCLE_COMMAND_ENDPOINT);
+    }
+
     async sendCycleCommand(command: 'start' | 'stop'): Promise<CycleCommand> {
         const result = await httpService.post<CycleCommand>(CYCLE_COMMAND_ENDPOINT, { command });
         return result;

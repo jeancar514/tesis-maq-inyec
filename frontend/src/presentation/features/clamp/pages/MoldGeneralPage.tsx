@@ -1,9 +1,13 @@
-import React from 'react';
-import { ServoVariableGrid } from '../../injection/components/ServoVariableGrid';
+import React, { useMemo } from 'react';
+import { ServoVariableGrid } from '../../../shared/components/ServoVariableGrid';
 import { MoldCanvas } from '../components/MoldCanvas';
 import { MoldControlPanel } from '../components/MoldControlPanel';
+import { MoldServoRepository } from '../../../../infrastructure/repository/mold-servo.repository';
 
 export const MoldGeneralPage: React.FC = () => {
+    // Servo de cierre/molde (servomotor_2), distinto al de Inyección (servomotor_1).
+    const moldServoGateway = useMemo(() => new MoldServoRepository(), []);
+
     return (
         <div className="flex flex-col h-full gap-3 overflow-hidden">
             <div className="shrink-0">
@@ -12,7 +16,7 @@ export const MoldGeneralPage: React.FC = () => {
             </div>
 
             <div className="shrink-0">
-                <ServoVariableGrid />
+                <ServoVariableGrid servoGateway={moldServoGateway} />
             </div>
 
             <div className="flex-1 min-h-0 grid grid-cols-12 gap-3 overflow-hidden">

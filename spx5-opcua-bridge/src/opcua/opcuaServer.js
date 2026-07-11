@@ -142,6 +142,7 @@ class OPCUABridgeServer {
                     break;
                 case REGISTER_TYPES.SERVO:
                     ApiServer.broadcastServoUpdate?.();
+                    ApiServer.broadcastMoldServoUpdate?.();
                     break;
                 case REGISTER_TYPES.OPERATION_MODE:
                     ApiServer.broadcastOperationModeUpdate?.(value);

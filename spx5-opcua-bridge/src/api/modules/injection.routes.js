@@ -2,6 +2,7 @@
 // MÓDULO: Inyección (servo, husillo, carro de inyección, perfiles)
 // ─────────────────────────────────────────────────────────────────────────────
 const express = require('express');
+const config = require('../../../config/config');
 const modbusClient = require('../../modbus/modbusClient');
 const opcuaServer = require('../../opcua/opcuaServer');
 const registerManager = require('../../utils/registerManager');
@@ -11,9 +12,13 @@ const { attachControlRoutes, attachMoveRoute } = require('./_shared');
 
 const router = express.Router();
 
-// GET /api/servo — lecturas del servomotor + husillo
-router.get(ROUTES.SERVO, (req, res) => {
+// GET /api/servo — lecturas del servomotor (doble fuente db/modbus)
+router.get(ROUTES.SERVO, async (req, res) => {
     try {
+        if (config.dataSource === 'db') {
+            const servo = await dbClient.getServoLectura();
+            if (servo) return res.json({ ...servo, _source: 'db' });
+        }
         const regs = registerManager.getAll().filter(reg =>
             reg.type === REGISTER_TYPES.SERVO || reg.type === REGISTER_TYPES.SCREW_CONTROL);
         const values = {};
@@ -101,8 +106,8 @@ router.post(ROUTES.SCREW_CONTROL, async (req, res) => {
     res.json(results);
 });
 
-// Carro de inyección: control genérico + movimiento por posición.
-attachControlRoutes(router, ROUTES.CARRIAGE_CONTROL, REGISTER_TYPES.CARRIAGE_CONTROL);
+// Carro de inyección: control genérico (doble fuente db/modbus) + movimiento por posición.
+attachControlRoutes(router, ROUTES.CARRIAGE_CONTROL, REGISTER_TYPES.CARRIAGE_CONTROL, dbClient.getCarroConfig);
 attachMoveRoute(router, `${ROUTES.CARRIAGE_CONTROL}/move`, REGISTER_TYPES.CARRIAGE_CONTROL);
 
 // ── Perfil de Inyección (etapas, persistido en DB) ─────────────────────────

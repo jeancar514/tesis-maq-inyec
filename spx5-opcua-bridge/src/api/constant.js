@@ -3,6 +3,8 @@ const ROUTES = {
     KPIS: '/api/kpis',
     OPERATION_MODE: '/api/operation-mode',
     CYCLE_COMMAND: '/api/cycle-command',
+    STEP_CYCLE: '/api/dashboard/step-cycle',
+    PHASE_TIMING: '/api/dashboard/phase-timing',
 
     // Inyección
     SERVO: '/api/servo',
@@ -13,6 +15,7 @@ const ROUTES = {
 
     // Molde (cierre)
     MOLD_CONTROL: '/api/mold-control',
+    MOLD_SERVO: '/api/mold-control/servo',
     CLAMP_CLOSING_PROFILE: '/api/clamp/closing-profile',
     CLAMP_OPENING_PROFILE: '/api/clamp/opening-profile',
 
@@ -22,10 +25,12 @@ const ROUTES = {
 
     // Temperaturas
     HEATING_ZONES: '/api/heating/zones',
+    HEATING_DIAGNOSTIC: '/api/heating/diagnostic',
 
     // Configuración / mantenimiento
     REGISTERS: '/api/registers',
-    DATA_SOURCE: '/api/config/data-source'
+    DATA_SOURCE: '/api/config/data-source',
+    CATALOGS: '/api/catalogos'
 };
 
 const REGISTER_TYPES = {

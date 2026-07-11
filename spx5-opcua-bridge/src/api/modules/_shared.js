@@ -6,6 +6,7 @@
 const modbusClient = require('../../modbus/modbusClient');
 const opcuaServer = require('../../opcua/opcuaServer');
 const registerManager = require('../../utils/registerManager');
+const config = require('../../../config/config');
 const { REGISTER_TYPES } = require('../constant');
 
 const VALID_MODBUS_TYPES = ['inputRegister', 'holdingRegister', 'coil', 'discreteInput'];
@@ -52,10 +53,16 @@ function readValuesByType(regType) {
 }
 
 // GET/POST genérico de control por tipo (lectura de caché + escritura de writables).
-function attachControlRoutes(router, route, regType) {
-    router.get(route, (req, res) => {
+// dbGetter (opcional): función async que devuelve los setpoints desde la DB; si se
+// provee y config.dataSource === 'db', el GET responde con esos valores (doble fuente).
+function attachControlRoutes(router, route, regType, dbGetter) {
+    router.get(route, async (req, res) => {
         try {
-            res.json(readValuesByType(regType));
+            if (dbGetter && config.dataSource === 'db') {
+                const dbValues = await dbGetter();
+                if (dbValues) return res.json({ ...dbValues, _source: 'db' });
+            }
+            res.json({ ...readValuesByType(regType), _source: 'modbus' });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }

@@ -1,0 +1,372 @@
+{
+  "modules": {
+    "dashboard": {
+      "name": "Dashboard / General",
+      "sections": {
+        "vgn": {
+          "name": "Vista General",
+          "description": "KPIs, modo de operación y comando de ciclo",
+          "registers": [
+            {
+              "name": "cycleTime",
+              "description": "Tiempo de Ciclo en segundos",
+              "modbusType": "inputRegister",
+              "modbusAddress": 0,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "s",
+              "readable": true,
+              "writable": false,
+              "type": "kpis"
+            },
+            {
+              "name": "productionCount",
+              "description": "Producción en unidades",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 1,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "unidades",
+              "readable": true,
+              "writable": false,
+              "type": "kpis"
+            },
+            {
+              "name": "qualityYield",
+              "description": "Rendimiento de Calidad en porcentaje",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 2,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "%",
+              "readable": true,
+              "writable": false,
+              "type": "kpis"
+            },
+            {
+              "name": "operationMode",
+              "description": "Modo de operación (1: manual, 2: automático)",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 10,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "operation_mode"
+            },
+            {
+              "name": "cycleCommand",
+              "description": "Comando de ciclo (1: start, 0: stop)",
+              "modbusType": "coil",
+              "modbusAddress": 11,
+              "opcuaDataType": "Boolean",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "cycle_command"
+            }
+          ]
+        },
+        "cip": {
+          "name": "Ciclos de Pasos",
+          "description": "Secuencia de fases del ciclo de inyección",
+          "registers": [
+            {
+              "name": "pasoActual",
+              "description": "Paso actual del ciclo (1-12)",
+              "modbusType": "inputRegister",
+              "modbusAddress": 12,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": false,
+              "type": "step_cycle"
+            },
+            {
+              "name": "pasosTotales",
+              "description": "Total de pasos del ciclo configurados",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 13,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "step_cycle"
+            }
+          ]
+        },
+        "mdt": {
+          "name": "Monitor de Tiempo",
+          "description": "Tiempo programado vs real por fase",
+          "registers": [
+            {
+              "name": "tiempoCicloObjetivo",
+              "description": "Tiempo de ciclo objetivo / programado",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 14,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "s",
+              "readable": true,
+              "writable": true,
+              "type": "phase_timing"
+            },
+            {
+              "name": "tiempoCicloReal",
+              "description": "Tiempo de ciclo real medido",
+              "modbusType": "inputRegister",
+              "modbusAddress": 15,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "s",
+              "readable": true,
+              "writable": false,
+              "type": "phase_timing"
+            }
+          ]
+        }
+      }
+    },
+    "clamp": {
+      "name": "Clamp / Molde",
+      "sections": {
+        "vgn": {
+          "name": "Vista General - Molde",
+          "description": "Configuración básica del control de molde",
+          "registers": [
+            {
+              "name": "moldControlEncendido",
+              "description": "Control de encendido del servo de molde (Encender)",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 60,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "mold_control"
+            },
+            {
+              "name": "moldTorque",
+              "description": "Torque máximo del servo de cierre de molde",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 88,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "%",
+              "readable": true,
+              "writable": true,
+              "type": "mold_control"
+            }
+          ]
+        },
+        "cie": {
+          "name": "Perfil de Cierre",
+          "description": "Etapas del perfil de cierre del molde",
+          "registers": [
+            {
+              "name": "moldCambioPosicion",
+              "description": "Posición de cambio de velocidad del molde",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 98,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "mm",
+              "readable": true,
+              "writable": true,
+              "type": "mold_control"
+            },
+            {
+              "name": "moldPosicion1",
+              "description": "Posición 1 de referencia del molde",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 108,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "mm",
+              "readable": true,
+              "writable": true,
+              "type": "mold_control"
+            }
+          ]
+        },
+        "ape": {
+          "name": "Perfil de Apertura",
+          "description": "Etapas del perfil de apertura del molde",
+          "registers": [
+            {
+              "name": "moldPosicion2",
+              "description": "Posición 2 de referencia del molde",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 118,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "mm",
+              "readable": true,
+              "writable": true,
+              "type": "mold_control"
+            },
+            {
+              "name": "moldVelocidadPosicion",
+              "description": "Velocidad del servo en posición de cierre",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 120,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "mm/s",
+              "readable": true,
+              "writable": true,
+              "type": "mold_control"
+            }
+          ]
+        }
+      }
+    },
+    "injection": {
+      "name": "Injection / Inyección",
+      "sections": {
+        "gen": {
+          "name": "General - Servomotor",
+          "description": "Lecturas del servomotor de inyección",
+          "registers": [
+            {
+              "name": "speed",
+              "description": "Lectura de Velocidad del Servo (Velocidad secundaria)",
+              "modbusType": "inputRegister",
+              "modbusAddress": 18,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "RPM",
+              "readable": true,
+              "writable": false,
+              "type": "servo"
+            },
+            {
+              "name": "torque",
+              "description": "Lectura de Torque del Servo (Torque secundario)",
+              "modbusType": "inputRegister",
+              "modbusAddress": 28,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "Nm",
+              "readable": true,
+              "writable": false,
+              "type": "servo"
+            }
+          ]
+        },
+        "hus": {
+          "name": "Husillo",
+          "description": "Control del husillo de dosificación",
+          "registers": [
+            {
+              "name": "controlEncendido",
+              "description": "Control de encendido del husillo (Encender)",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 10,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "screw_control"
+            },
+            {
+              "name": "velocidadHusilloLow",
+              "description": "Velocidad husillo - Palabra baja (bits 0-15)",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 20,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "screw_control",
+              "is32Bit": true,
+              "bitPosition": "low"
+            }
+          ]
+        },
+        "iny": {
+          "name": "Perfil de Inyección",
+          "description": "Etapas del perfil de inyección",
+          "registers": [
+            {
+              "name": "position",
+              "description": "Posición del Servo",
+              "modbusType": "inputRegister",
+              "modbusAddress": 38,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "°",
+              "readable": true,
+              "writable": false,
+              "type": "servo"
+            },
+            {
+              "name": "current",
+              "description": "Corriente del Servo (Ampere)",
+              "modbusType": "inputRegister",
+              "modbusAddress": 48,
+              "opcuaDataType": "Double",
+              "scaleFactor": 1,
+              "unit": "A",
+              "readable": true,
+              "writable": false,
+              "type": "servo"
+            }
+          ]
+        }
+      }
+    },
+    "ejection": {
+      "name": "Ejection / Eyección",
+      "sections": {
+        "pey": {
+          "name": "Perfil de Eyección",
+          "description": "Control del eyector de piezas",
+          "registers": [
+            {
+              "name": "ejectorControlEncendido",
+              "description": "Control de encendido del eyector (Encender)",
+              "modbusType": "holdingRegister",
+              "modbusAddress": 220,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "",
+              "readable": true,
+              "writable": true,
+              "type": "ejector_control"
+            },
+            {
+              "name": "ejectorVelocidad",
+              "description": "Lectura de velocidad del eyector",
+              "modbusType": "inputRegister",
+              "modbusAddress": 238,
+              "opcuaDataType": "Int16",
+              "scaleFactor": 1,
+              "unit": "mm/s",
+              "readable": true,
+              "writable": false,
+              "type": "ejector_control"
+            }
+          ]
+        }
+      }
+    },
+    "heating": {
+      "name": "Heating / Temperatura",
+      "sections": {
+        "zon": {
+          "name": "Zonas del Cilindro",
+          "description": "Control de temperatura del cilindro de calefacción",
+          "registers": []
+        }
+      }
+    }
+  }
+}

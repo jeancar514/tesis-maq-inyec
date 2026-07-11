@@ -53,6 +53,23 @@ router.post(ROUTES.MOLD_CONTROL, async (req, res) => {
 
 attachMoveRoute(router, `${ROUTES.MOLD_CONTROL}/move`, REGISTER_TYPES.MOLD_CONTROL);
 
+// GET /api/mold-control/servo — lecturas del servomotor de cierre/molde (servomotor_2).
+// Nota: el SPX5 solo expone un único juego de registros Modbus tipo "servo"
+// (velocidad/torque/posición/corriente/voltaje). En modo 'db' se lee el
+// servomotor_2 real (persistido por el bridge); en modo 'modbus' se usa la
+// caché de registros como aproximación, ya que el PLC no discrimina por eje.
+router.get(ROUTES.MOLD_SERVO, async (req, res) => {
+    try {
+        if (config.dataSource === 'db') {
+            const servo = await dbClient.getMoldServoLectura();
+            if (servo) return res.json({ ...servo, _source: 'db' });
+        }
+        res.json({ ...readValuesByType(REGISTER_TYPES.SERVO), _source: 'modbus' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── Perfil de Cierre (etapas, persistido en DB) ────────────────────────────
 router.get(ROUTES.CLAMP_CLOSING_PROFILE, async (req, res) => {
     try {

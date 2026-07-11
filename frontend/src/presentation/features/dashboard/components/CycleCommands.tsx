@@ -13,11 +13,19 @@ export const CycleCommands: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        let mounted = true;
+
+        // Carga inicial desde la base de datos (GET), independiente del WebSocket.
+        subscribeCycleCommandUseCase.getCurrent()
+            .then((data) => { if (mounted && (data.command === 'start' || data.command === 'stop')) setLastCommand(data.command); })
+            .catch((err) => console.error('Error al obtener el comando de ciclo:', err));
+
         subscribeCycleCommandUseCase.connectWebSocket();
         const unsubscribe = subscribeCycleCommandUseCase.subscribe((data) => {
             setLastCommand(data.command);
         });
         return () => {
+            mounted = false;
             unsubscribe();
             subscribeCycleCommandUseCase.disconnectWebSocket();
         };

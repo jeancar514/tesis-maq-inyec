@@ -8,8 +8,8 @@ const { attachControlRoutes, attachMoveRoute } = require('./_shared');
 
 const router = express.Router();
 
-// Eyector: control genérico + movimiento por posición.
-attachControlRoutes(router, ROUTES.EJECTOR_CONTROL, REGISTER_TYPES.EJECTOR_CONTROL);
+// Eyector: control genérico (doble fuente db/modbus) + movimiento por posición.
+attachControlRoutes(router, ROUTES.EJECTOR_CONTROL, REGISTER_TYPES.EJECTOR_CONTROL, dbClient.getEyectorConfig);
 attachMoveRoute(router, `${ROUTES.EJECTOR_CONTROL}/move`, REGISTER_TYPES.EJECTOR_CONTROL);
 
 // ── Perfil de Eyección (etapas, persistido en DB) ──────────────────────────

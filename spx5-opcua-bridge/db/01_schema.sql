@@ -1,50 +1,37 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- ESQUEMA SIMPLIFICADO — MÁQUINA DE INYECCIÓN (SPX5)
+-- ESQUEMA — MÁQUINA DE INYECCIÓN (SPX5)
 -- ═══════════════════════════════════════════════════════════════════════════════
--- Todas las tablas viven en el esquema `public`.
--- Se agrupan por módulo usando un PREFIJO DE 3 LETRAS en el nombre:
+-- CONVENCIÓN:
+--   * ESQUEMA  = módulo del FooterNav (nombre completo de la ruta):
+--       dashboard | clamp | injection | ejection | heating | maintenance
+--     (+ public para la receta compartida)
+--   * TABLA     = <cod3>_<nombre>, donde <cod3> es un código de 3 letras que indica
+--     a qué SECCIÓN del Sidebar pertenece la tabla:
+--       vgn = Vista General      cie = Perfil de Cierre     ape = Perfil de Apertura
+--       gen = General (inyección) hus = Husillo              iny = Perfil de Inyección
+--       pey = Perfil de Eyección  zon = Zonas del Cilindro   iom = Monitor I/O
+--       ala = Historial de Alarmas  rec = Gestión de Recetas
 --
---   (sin prefijo) : datos compartidos (dispositivo, servomotor, perfil, fase_ciclo)
---   gen_          : Dashboard General (KPIs, modo operación, comando ciclo, ciclo)
---   inj_          : Inyección (servomotor lecturas, husillo, etapas inyección/sostenimiento)
---   clp_          : Cierre / Molde (config molde, etapas cierre/apertura)
---   ejc_          : Eyección (etapas eyección)
---   hea_          : Calefacción (zonas + lecturas)
---   mnt_          : Mantenimiento (señales I/O, alarmas)
+-- Diseño plano y con pocas relaciones:
+--   * La máquina es única → configuraciones = tablas de UNA sola fila (id = 1).
+--   * Las lecturas identifican su origen con un código de texto (no con FK).
+--   * Solo se conservan FK con valor: etapas→rec_perfil, lecturas de zona,
+--     estados de señal y eventos de alarma.
 --
 -- Idempotente: IF NOT EXISTS en todo.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+CREATE SCHEMA IF NOT EXISTS dashboard;
+CREATE SCHEMA IF NOT EXISTS clamp;
+CREATE SCHEMA IF NOT EXISTS injection;
+CREATE SCHEMA IF NOT EXISTS ejection;
+CREATE SCHEMA IF NOT EXISTS heating;
+CREATE SCHEMA IF NOT EXISTS recipes;
+
 -- ─────────────────────────────────────────────────────────────────────────────
--- 1. DATOS COMPARTIDOS
+-- recipes — Gestión de Recetas (perfil compartido por los perfiles de cada módulo)
 -- ─────────────────────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS dispositivo (
-    id          SERIAL PRIMARY KEY,
-    codigo      TEXT NOT NULL UNIQUE,
-    nombre      TEXT NOT NULL,
-    tipo        TEXT NOT NULL DEFAULT 'maquina',
-    modulo      TEXT,
-    descripcion TEXT,
-    activo      BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE IF NOT EXISTS servomotor (
-    id              SERIAL PRIMARY KEY,
-    dispositivo_id  INTEGER NOT NULL UNIQUE REFERENCES dispositivo(id) ON DELETE CASCADE,
-    eje             TEXT,
-    descripcion     TEXT
-);
-
-CREATE TABLE IF NOT EXISTS fase_ciclo (
-    id      SERIAL PRIMARY KEY,
-    orden   SMALLINT NOT NULL UNIQUE,
-    codigo  TEXT NOT NULL UNIQUE,
-    nombre  TEXT NOT NULL,
-    modulo  TEXT
-);
-
-CREATE TABLE IF NOT EXISTS perfil (
+CREATE TABLE IF NOT EXISTS recipes.rec_perfil (
     id          SERIAL PRIMARY KEY,
     nombre      TEXT NOT NULL UNIQUE,
     descripcion TEXT,
@@ -53,35 +40,67 @@ CREATE TABLE IF NOT EXISTS perfil (
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 2. gen_ — DASHBOARD GENERAL (KPIs, modo operación, comando ciclo)
+-- dashboard — MAESTROS DE VALORES (catálogos de valores predeterminados) · cat_*
+-- Definen los valores válidos que pueden tomar las columnas de estado/modo/etc.
+-- Se referencian por FK desde las tablas operativas para forzar valores válidos.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-CREATE TABLE IF NOT EXISTS gen_modo_operacion (
-    id              SERIAL PRIMARY KEY,
-    dispositivo_id  INTEGER NOT NULL UNIQUE REFERENCES dispositivo(id) ON DELETE CASCADE,
-    modo            SMALLINT NOT NULL DEFAULT 1,  -- 1: manual, 2: automático
-    actualizado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Modo de operación: 1 = manual, 2 = automático
+CREATE TABLE IF NOT EXISTS dashboard.cat_modo_operacion (
+    codigo      SMALLINT PRIMARY KEY,
+    etiqueta    TEXT NOT NULL,
+    descripcion TEXT
 );
 
-CREATE TABLE IF NOT EXISTS gen_comando_ciclo (
-    id              SERIAL PRIMARY KEY,
-    dispositivo_id  INTEGER NOT NULL UNIQUE REFERENCES dispositivo(id) ON DELETE CASCADE,
-    comando         TEXT NOT NULL DEFAULT 'stop',  -- 'start' | 'stop'
-    activa          BOOLEAN NOT NULL DEFAULT FALSE,
-    actualizado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Valor textual del modo: 'activo' | 'inactivo'
+CREATE TABLE IF NOT EXISTS dashboard.cat_valor_modo (
+    codigo   TEXT PRIMARY KEY,
+    etiqueta TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS gen_ciclo (
-    id              BIGSERIAL PRIMARY KEY,
-    perfil_id       INTEGER REFERENCES perfil(id),
-    inicio          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    fin             TIMESTAMPTZ,
-    tiempo_ciclo    DOUBLE PRECISION,
-    modo_operacion  SMALLINT,
-    resultado       TEXT
+-- Comando de ciclo: 'start' | 'stop'
+CREATE TABLE IF NOT EXISTS dashboard.cat_comando_ciclo (
+    codigo   TEXT PRIMARY KEY,
+    etiqueta TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS gen_kpi_lectura (
+-- Estado de activación (booleano): true = activa, false = inactiva
+CREATE TABLE IF NOT EXISTS dashboard.cat_activacion (
+    codigo   BOOLEAN PRIMARY KEY,
+    etiqueta TEXT NOT NULL
+);
+
+-- Estado de una fase del ciclo: 'completado' | 'activo' | 'pendiente' | 'bloqueado'
+CREATE TABLE IF NOT EXISTS dashboard.cat_estado_fase (
+    codigo   TEXT PRIMARY KEY,
+    etiqueta TEXT NOT NULL,
+    orden    SMALLINT NOT NULL DEFAULT 0,
+    color    TEXT
+);
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- dashboard — FooterNav "General"
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- Vista General · modo de operación (fila única: id = 1) → 1: manual, 2: automático
+-- `valor` = estado textual del modo: 'activo' (automático) | 'inactivo' (manual)
+CREATE TABLE IF NOT EXISTS dashboard.vgn_modo_operacion (
+    id             SMALLINT PRIMARY KEY DEFAULT 1,
+    modo           SMALLINT NOT NULL DEFAULT 1 REFERENCES dashboard.cat_modo_operacion(codigo),
+    valor          TEXT NOT NULL DEFAULT 'inactivo' REFERENCES dashboard.cat_valor_modo(codigo),
+    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Vista General · comando de ciclo (fila única: id = 1) → 'start' | 'stop'
+CREATE TABLE IF NOT EXISTS dashboard.vgn_comando_ciclo (
+    id             SMALLINT PRIMARY KEY DEFAULT 1,
+    comando        TEXT NOT NULL DEFAULT 'stop' REFERENCES dashboard.cat_comando_ciclo(codigo),
+    activa         BOOLEAN NOT NULL DEFAULT FALSE REFERENCES dashboard.cat_activacion(codigo),
+    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Vista General · KPIs (histórico de snapshots)
+CREATE TABLE IF NOT EXISTS dashboard.vgn_kpi_lectura (
     id                  BIGSERIAL PRIMARY KEY,
     tiempo_ciclo        DOUBLE PRECISION,
     conteo_produccion   DOUBLE PRECISION,
@@ -90,72 +109,36 @@ CREATE TABLE IF NOT EXISTS gen_kpi_lectura (
     capturado_en        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_gen_kpi_lectura_fecha ON gen_kpi_lectura(capturado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_dashboard_vgn_kpi_fecha ON dashboard.vgn_kpi_lectura(capturado_en DESC);
 
-CREATE TABLE IF NOT EXISTS gen_ciclo_fase (
-    id          BIGSERIAL PRIMARY KEY,
-    ciclo_id    BIGINT NOT NULL REFERENCES gen_ciclo(id) ON DELETE CASCADE,
-    fase_id     INTEGER NOT NULL REFERENCES fase_ciclo(id),
-    estado      TEXT NOT NULL DEFAULT 'pendiente',
-    duracion    DOUBLE PRECISION,
-    inicio      TIMESTAMPTZ,
-    fin         TIMESTAMPTZ,
-    UNIQUE (ciclo_id, fase_id)
+-- Ciclo de Pasos · secuencia de fases del ciclo (12 pasos) + estado en vivo
+-- estado: 'completado' | 'activo' | 'pendiente' | 'bloqueado'
+CREATE TABLE IF NOT EXISTS dashboard.cip_fase (
+    id             SERIAL PRIMARY KEY,
+    orden          SMALLINT NOT NULL UNIQUE,
+    nombre         TEXT NOT NULL,
+    estado         TEXT NOT NULL DEFAULT 'pendiente' REFERENCES dashboard.cat_estado_fase(codigo),
+    duracion       DOUBLE PRECISION NOT NULL DEFAULT 0,   -- segundos
+    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ─────────────────────────────────────────────────────────────────────────────
--- 3. inj_ — INYECCIÓN (servomotor lecturas, husillo, etapas)
--- ─────────────────────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS inj_servomotor_lectura (
-    id              BIGSERIAL PRIMARY KEY,
-    servomotor_id   INTEGER NOT NULL REFERENCES servomotor(id) ON DELETE CASCADE,
-    velocidad       DOUBLE PRECISION,
-    torque          DOUBLE PRECISION,
-    posicion        DOUBLE PRECISION,
-    corriente       DOUBLE PRECISION,
-    voltaje         DOUBLE PRECISION,
-    capturado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_inj_servo_lectura ON inj_servomotor_lectura(servomotor_id, capturado_en DESC);
-
-CREATE TABLE IF NOT EXISTS inj_husillo_config (
+-- Monitor de Tiempo · tiempo programado vs real por fase
+CREATE TABLE IF NOT EXISTS dashboard.mdt_fase_tiempo (
     id                 SERIAL PRIMARY KEY,
-    dispositivo_id     INTEGER NOT NULL UNIQUE REFERENCES dispositivo(id) ON DELETE CASCADE,
-    control_encendido  INTEGER NOT NULL DEFAULT 0,
-    velocidad_husillo  DOUBLE PRECISION NOT NULL DEFAULT 0,
-    torque_husillo     DOUBLE PRECISION NOT NULL DEFAULT 0,
+    orden              SMALLINT NOT NULL UNIQUE,
+    nombre             TEXT NOT NULL,
+    tiempo_programado  DOUBLE PRECISION NOT NULL DEFAULT 0,   -- segundos
+    tiempo_real        DOUBLE PRECISION NOT NULL DEFAULT 0,   -- segundos
     actualizado_en     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS inj_etapa_inyeccion (
-    id            SERIAL PRIMARY KEY,
-    perfil_id     INTEGER NOT NULL REFERENCES perfil(id) ON DELETE CASCADE,
-    orden         SMALLINT NOT NULL,
-    punto_inicio  DOUBLE PRECISION NOT NULL DEFAULT 0,
-    velocidad     DOUBLE PRECISION NOT NULL DEFAULT 0,
-    UNIQUE (perfil_id, orden)
-);
+-- ═════════════════════════════════════════════════════════════════════════════
+-- clamp — FooterNav "Molde"
+-- ═════════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS inj_etapa_sostenimiento (
-    id          SERIAL PRIMARY KEY,
-    perfil_id   INTEGER NOT NULL REFERENCES perfil(id) ON DELETE CASCADE,
-    orden       SMALLINT NOT NULL,
-    presion     DOUBLE PRECISION NOT NULL DEFAULT 0,
-    tiempo      DOUBLE PRECISION NOT NULL DEFAULT 0,
-    velocidad   DOUBLE PRECISION NOT NULL DEFAULT 0,
-    posicion    DOUBLE PRECISION NOT NULL DEFAULT 0,
-    UNIQUE (perfil_id, orden)
-);
-
--- ─────────────────────────────────────────────────────────────────────────────
--- 4. clp_ — CIERRE / MOLDE (config + etapas cierre/apertura)
--- ─────────────────────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS clp_molde_config (
-    id                  SERIAL PRIMARY KEY,
-    dispositivo_id      INTEGER NOT NULL UNIQUE REFERENCES dispositivo(id) ON DELETE CASCADE,
+-- Vista General · setpoints del molde (fila única: id = 1)
+CREATE TABLE IF NOT EXISTS clamp.vgn_molde_config (
+    id                  SMALLINT PRIMARY KEY DEFAULT 1,
     control_encendido   INTEGER NOT NULL DEFAULT 0,
     torque              DOUBLE PRECISION NOT NULL DEFAULT 0,
     cambio_posicion     DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -165,9 +148,23 @@ CREATE TABLE IF NOT EXISTS clp_molde_config (
     actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS clp_etapa_cierre (
+-- Vista General · lecturas del servomotor de cierre/molde (eje único: servomotor_2)
+CREATE TABLE IF NOT EXISTS clamp.vgn_servomotor_lectura (
+    id            BIGSERIAL PRIMARY KEY,
+    velocidad     DOUBLE PRECISION,
+    torque        DOUBLE PRECISION,
+    posicion      DOUBLE PRECISION,
+    corriente     DOUBLE PRECISION,
+    voltaje       DOUBLE PRECISION,
+    capturado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_clamp_vgn_servo_fecha ON clamp.vgn_servomotor_lectura(capturado_en DESC);
+
+-- Perfil de Cierre · etapas
+CREATE TABLE IF NOT EXISTS clamp.cie_etapa_cierre (
     id          SERIAL PRIMARY KEY,
-    perfil_id   INTEGER NOT NULL REFERENCES perfil(id) ON DELETE CASCADE,
+    perfil_id   INTEGER NOT NULL REFERENCES recipes.rec_perfil(id) ON DELETE CASCADE,
     orden       SMALLINT NOT NULL,
     etiqueta    TEXT,
     inicio      DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -176,9 +173,10 @@ CREATE TABLE IF NOT EXISTS clp_etapa_cierre (
     UNIQUE (perfil_id, orden)
 );
 
-CREATE TABLE IF NOT EXISTS clp_etapa_apertura (
+-- Perfil de Apertura · etapas
+CREATE TABLE IF NOT EXISTS clamp.ape_etapa_apertura (
     id             SERIAL PRIMARY KEY,
-    perfil_id      INTEGER NOT NULL REFERENCES perfil(id) ON DELETE CASCADE,
+    perfil_id      INTEGER NOT NULL REFERENCES recipes.rec_perfil(id) ON DELETE CASCADE,
     orden          SMALLINT NOT NULL,
     etiqueta       TEXT,
     posicion       DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -187,13 +185,86 @@ CREATE TABLE IF NOT EXISTS clp_etapa_apertura (
     UNIQUE (perfil_id, orden)
 );
 
--- ─────────────────────────────────────────────────────────────────────────────
--- 5. ejc_ — EYECCIÓN
--- ─────────────────────────────────────────────────────────────────────────────
+-- ═════════════════════════════════════════════════════════════════════════════
+-- injection — FooterNav "Inyección"
+-- ═════════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS ejc_etapa_eyeccion (
+-- General · lecturas del servomotor de inyección (eje único: servomotor_1)
+CREATE TABLE IF NOT EXISTS injection.gen_servomotor_lectura (
+    id            BIGSERIAL PRIMARY KEY,
+    velocidad     DOUBLE PRECISION,
+    torque        DOUBLE PRECISION,
+    posicion      DOUBLE PRECISION,
+    corriente     DOUBLE PRECISION,
+    voltaje       DOUBLE PRECISION,
+    capturado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_injection_gen_servo_fecha ON injection.gen_servomotor_lectura(capturado_en DESC);
+
+-- Husillo · setpoints (fila única: id = 1)
+CREATE TABLE IF NOT EXISTS injection.hus_husillo_config (
+    id                 SMALLINT PRIMARY KEY DEFAULT 1,
+    control_encendido  INTEGER NOT NULL DEFAULT 0,
+    velocidad_husillo  DOUBLE PRECISION NOT NULL DEFAULT 0,
+    torque_husillo     DOUBLE PRECISION NOT NULL DEFAULT 0,
+    actualizado_en     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Perfil de Inyección · etapas
+CREATE TABLE IF NOT EXISTS injection.iny_etapa_inyeccion (
+    id            SERIAL PRIMARY KEY,
+    perfil_id     INTEGER NOT NULL REFERENCES recipes.rec_perfil(id) ON DELETE CASCADE,
+    orden         SMALLINT NOT NULL,
+    punto_inicio  DOUBLE PRECISION NOT NULL DEFAULT 0,
+    velocidad     DOUBLE PRECISION NOT NULL DEFAULT 0,
+    UNIQUE (perfil_id, orden)
+);
+
+-- Husillo · etapas de sostenimiento (ruta /injection/holding)
+CREATE TABLE IF NOT EXISTS injection.hus_etapa_sostenimiento (
     id          SERIAL PRIMARY KEY,
-    perfil_id   INTEGER NOT NULL REFERENCES perfil(id) ON DELETE CASCADE,
+    perfil_id   INTEGER NOT NULL REFERENCES recipes.rec_perfil(id) ON DELETE CASCADE,
+    orden       SMALLINT NOT NULL,
+    presion     DOUBLE PRECISION NOT NULL DEFAULT 0,
+    tiempo      DOUBLE PRECISION NOT NULL DEFAULT 0,
+    velocidad   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    posicion    DOUBLE PRECISION NOT NULL DEFAULT 0,
+    UNIQUE (perfil_id, orden)
+);
+
+-- Carro de Inyección · setpoints (fila única: id = 1)
+CREATE TABLE IF NOT EXISTS injection.car_carro_config (
+    id                  SMALLINT PRIMARY KEY DEFAULT 1,
+    control_encendido   INTEGER NOT NULL DEFAULT 0,
+    torque              DOUBLE PRECISION NOT NULL DEFAULT 0,
+    cambio_posicion     DOUBLE PRECISION NOT NULL DEFAULT 0,
+    posicion1           DOUBLE PRECISION NOT NULL DEFAULT 0,
+    posicion2           DOUBLE PRECISION NOT NULL DEFAULT 0,
+    velocidad_posicion  DOUBLE PRECISION NOT NULL DEFAULT 0,
+    actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- ejection — FooterNav "Eyección"
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- Eyector · setpoints (fila única: id = 1)
+CREATE TABLE IF NOT EXISTS ejection.eyc_eyector_config (
+    id                  SMALLINT PRIMARY KEY DEFAULT 1,
+    control_encendido   INTEGER NOT NULL DEFAULT 0,
+    torque              DOUBLE PRECISION NOT NULL DEFAULT 0,
+    cambio_posicion     DOUBLE PRECISION NOT NULL DEFAULT 0,
+    posicion1           DOUBLE PRECISION NOT NULL DEFAULT 0,
+    posicion2           DOUBLE PRECISION NOT NULL DEFAULT 0,
+    velocidad_posicion  DOUBLE PRECISION NOT NULL DEFAULT 0,
+    actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Perfil de Eyección · etapas
+CREATE TABLE IF NOT EXISTS ejection.pey_etapa_eyeccion (
+    id          SERIAL PRIMARY KEY,
+    perfil_id   INTEGER NOT NULL REFERENCES recipes.rec_perfil(id) ON DELETE CASCADE,
     orden       SMALLINT NOT NULL,
     etiqueta    TEXT,
     posicion    DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -201,13 +272,14 @@ CREATE TABLE IF NOT EXISTS ejc_etapa_eyeccion (
     UNIQUE (perfil_id, orden)
 );
 
--- ─────────────────────────────────────────────────────────────────────────────
--- 6. hea_ — CALEFACCIÓN (zonas + lecturas)
--- ─────────────────────────────────────────────────────────────────────────────
+-- ═════════════════════════════════════════════════════════════════════════════
+-- heating — FooterNav "Temp."
+-- ═════════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS hea_zona_calefaccion (
+-- Zonas del Cilindro · definición de zonas
+CREATE TABLE IF NOT EXISTS heating.zon_zona_calefaccion (
     id              SERIAL PRIMARY KEY,
-    dispositivo_id  INTEGER NOT NULL UNIQUE REFERENCES dispositivo(id) ON DELETE CASCADE,
+    codigo          TEXT NOT NULL UNIQUE,       -- p.ej. 'zona_1' .. 'zona_5'
     nombre          TEXT NOT NULL,
     setpoint        DOUBLE PRECISION NOT NULL DEFAULT 0,
     tolerancia_sup  DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -215,54 +287,16 @@ CREATE TABLE IF NOT EXISTS hea_zona_calefaccion (
     activa          BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-CREATE TABLE IF NOT EXISTS hea_zona_lectura (
+-- Zonas del Cilindro · lecturas en tiempo real
+CREATE TABLE IF NOT EXISTS heating.zon_zona_lectura (
     id              BIGSERIAL PRIMARY KEY,
-    zona_id         INTEGER NOT NULL REFERENCES hea_zona_calefaccion(id) ON DELETE CASCADE,
+    zona_id         INTEGER NOT NULL REFERENCES heating.zon_zona_calefaccion(id) ON DELETE CASCADE,
     temperatura_pv  DOUBLE PRECISION,
     salida_ssr      DOUBLE PRECISION,
     capturado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_hea_zona_lectura ON hea_zona_lectura(zona_id, capturado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_heating_zon_lectura ON heating.zon_zona_lectura(zona_id, capturado_en DESC);
 
--- ─────────────────────────────────────────────────────────────────────────────
--- 7. mnt_ — MANTENIMIENTO (señales I/O + alarmas)
--- ─────────────────────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS mnt_senal_io (
-    id          SERIAL PRIMARY KEY,
-    modulo      TEXT,
-    direccion   TEXT NOT NULL UNIQUE,
-    etiqueta    TEXT NOT NULL,
-    es_salida   BOOLEAN NOT NULL DEFAULT FALSE,
-    grupo       TEXT
-);
-
-CREATE TABLE IF NOT EXISTS mnt_senal_io_estado (
-    id           BIGSERIAL PRIMARY KEY,
-    senal_id     INTEGER NOT NULL REFERENCES mnt_senal_io(id) ON DELETE CASCADE,
-    activo       BOOLEAN NOT NULL,
-    capturado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_mnt_senal_estado ON mnt_senal_io_estado(senal_id, capturado_en DESC);
-
-CREATE TABLE IF NOT EXISTS mnt_alarma (
-    id          SERIAL PRIMARY KEY,
-    codigo      TEXT NOT NULL UNIQUE,
-    severidad   TEXT NOT NULL DEFAULT 'info',  -- 'critical' | 'warning' | 'info'
-    titulo      TEXT NOT NULL,
-    descripcion TEXT,
-    modulo      TEXT
-);
-
-CREATE TABLE IF NOT EXISTS mnt_alarma_evento (
-    id              BIGSERIAL PRIMARY KEY,
-    alarma_id       INTEGER NOT NULL REFERENCES mnt_alarma(id) ON DELETE CASCADE,
-    ocurrido_en     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    estado          TEXT NOT NULL DEFAULT 'active',
-    reconocido_por  TEXT,
-    reconocido_en   TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS idx_mnt_alarma_evento ON mnt_alarma_evento(alarma_id, ocurrido_en DESC);
+-- Nota: el módulo "Configuración/Mantenimiento" (Monitor I/O, Historial de Alarmas)
+-- se gestiona en el frontend vía registerManager (registers.json), sin tablas propias.

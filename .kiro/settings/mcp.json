@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "dbhub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub",
+        "--transport",
+        "stdio",
+        "--config",
+        "c:/Users/jeanc/Documents/tesis/proyecto/tesis-maq-inyec/dbhub.toml"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "execute_sql",
+        "list_schemas",
+        "list_tables",
+        "describe_table"
+      ]
+    }
+  }
+}
