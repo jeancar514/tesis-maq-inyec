@@ -70,11 +70,68 @@ router.get(ROUTES.MOLD_SERVO, async (req, res) => {
     }
 });
 
-// ── Perfil de Cierre (etapas, persistido en DB) ────────────────────────────
+// Etiquetas de las etapas al leer desde Modbus (el PLC no guarda etiqueta de texto).
+const CLOSING_STAGE_LABELS = ['Fase 1', 'Fase 2', 'Inicio Protección Molde'];
+const OPENING_STAGE_LABELS = ['Fase 1', 'Fase 2', 'Posición Final'];
+
+// Lee 3 etapas de cierre desde la caché de registros Modbus (clampClosingStageN*).
+function readClosingProfileFromModbus() {
+    const stages = [];
+    for (let i = 1; i <= 3; i++) {
+        const get = (suffix) => {
+            const reg = registerManager.getAll().find(r => r.name === `clampClosingStage${i}${suffix}`);
+            return reg ? Number(opcuaServer._getCachedValue(reg)) || 0 : 0;
+        };
+        stages.push({
+            orden: i,
+            etiqueta: CLOSING_STAGE_LABELS[i - 1],
+            inicio: get('Inicio'),
+            velocidad: get('Velocidad'),
+            torqueMax: get('TorqueMax'),
+        });
+    }
+    return stages;
+}
+
+// Lee 3 etapas de apertura desde la caché de registros Modbus (clampOpeningStageN*).
+function readOpeningProfileFromModbus() {
+    const stages = [];
+    for (let i = 1; i <= 3; i++) {
+        const get = (suffix) => {
+            const reg = registerManager.getAll().find(r => r.name === `clampOpeningStage${i}${suffix}`);
+            return reg ? Number(opcuaServer._getCachedValue(reg)) || 0 : 0;
+        };
+        stages.push({
+            orden: i,
+            etiqueta: OPENING_STAGE_LABELS[i - 1],
+            posicion: get('Posicion'),
+            velocidad: get('Velocidad'),
+            aceleracion: get('Aceleracion'),
+        });
+    }
+    return stages;
+}
+
+// Escribe una etapa de cierre/apertura en sus registros Modbus correspondientes.
+async function writeStageToModbus(prefix, orden, fields) {
+    for (const [suffix, value] of Object.entries(fields)) {
+        if (value === undefined || value === null) continue;
+        const reg = registerManager.getAll().find(r => r.name === `${prefix}${orden}${suffix}`);
+        if (!reg || !reg.writable) continue;
+        await modbusClient.writeByConfig(reg, Number(value));
+        opcuaServer.updateCachedValue(reg.name, Number(value));
+        opcuaServer.markAsWritten(reg.name);
+    }
+}
+
+// ── Perfil de Cierre (doble fuente: db | modbus, según config.dataSource) ─────
 router.get(ROUTES.CLAMP_CLOSING_PROFILE, async (req, res) => {
     try {
-        const stages = await dbClient.getClosingProfile();
-        res.json({ success: true, source: 'db', stages });
+        if (config.dataSource === 'db') {
+            const stages = await dbClient.getClosingProfile();
+            return res.json({ success: true, source: 'db', stages });
+        }
+        res.json({ success: true, source: 'modbus', stages: readClosingProfileFromModbus() });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -85,18 +142,30 @@ router.post(ROUTES.CLAMP_CLOSING_PROFILE, async (req, res) => {
     if (!stages || stages.length === 0)
         return res.status(400).json({ success: false, error: 'Body debe incluir "stages" (array no vacío)' });
     try {
-        const saved = await dbClient.saveClosingProfile(stages);
-        res.json({ success: true, stages: saved });
+        if (config.dataSource === 'db') {
+            const saved = await dbClient.saveClosingProfile(stages);
+            return res.json({ success: true, source: 'db', stages: saved });
+        }
+        for (const s of stages) {
+            if (!s.orden) continue;
+            await writeStageToModbus('clampClosingStage', s.orden, {
+                Inicio: s.inicio, Velocidad: s.velocidad, TorqueMax: s.torqueMax,
+            });
+        }
+        res.json({ success: true, source: 'modbus', stages: readClosingProfileFromModbus() });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ── Perfil de Apertura (etapas, persistido en DB) ──────────────────────────
+// ── Perfil de Apertura (doble fuente: db | modbus, según config.dataSource) ───
 router.get(ROUTES.CLAMP_OPENING_PROFILE, async (req, res) => {
     try {
-        const stages = await dbClient.getOpeningProfile();
-        res.json({ success: true, source: 'db', stages });
+        if (config.dataSource === 'db') {
+            const stages = await dbClient.getOpeningProfile();
+            return res.json({ success: true, source: 'db', stages });
+        }
+        res.json({ success: true, source: 'modbus', stages: readOpeningProfileFromModbus() });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -107,8 +176,17 @@ router.post(ROUTES.CLAMP_OPENING_PROFILE, async (req, res) => {
     if (!stages || stages.length === 0)
         return res.status(400).json({ success: false, error: 'Body debe incluir "stages" (array no vacío)' });
     try {
-        const saved = await dbClient.saveOpeningProfile(stages);
-        res.json({ success: true, stages: saved });
+        if (config.dataSource === 'db') {
+            const saved = await dbClient.saveOpeningProfile(stages);
+            return res.json({ success: true, source: 'db', stages: saved });
+        }
+        for (const s of stages) {
+            if (!s.orden) continue;
+            await writeStageToModbus('clampOpeningStage', s.orden, {
+                Posicion: s.posicion, Velocidad: s.velocidad, Aceleracion: s.aceleracion,
+            });
+        }
+        res.json({ success: true, source: 'modbus', stages: readOpeningProfileFromModbus() });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

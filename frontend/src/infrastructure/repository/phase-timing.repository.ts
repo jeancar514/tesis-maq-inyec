@@ -15,4 +15,10 @@ export class PhaseTimingRepository implements PhaseTimingGateway {
         const res = await httpService.get<PhaseTimingResponse>(url);
         return res?.phases ?? [];
     }
+
+    async savePhaseTiming(phases: FaseTiempo[]): Promise<FaseTiempo[]> {
+        const url = `${environment.apiUrl}/api/dashboard/phase-timing`;
+        const res = await httpService.put<PhaseTimingResponse>(url, { phases });
+        return res?.phases ?? [];
+    }
 }
