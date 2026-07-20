@@ -137,15 +137,17 @@ export const HeatingZonesPage: React.FC = () => {
                         Sin zonas configuradas.
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
-                        {zones.map((zone) => (
-                            <ZoneCard
-                                key={zone.id}
-                                zone={zone}
-                                isEditing={isEditing}
-                                onChange={(field, value) => setField(zone.id, field, value)}
-                            />
-                        ))}
+                    <div className="min-h-full flex flex-col justify-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-stretch">
+                            {zones.map((zone) => (
+                                <ZoneCard
+                                    key={zone.id}
+                                    zone={zone}
+                                    isEditing={isEditing}
+                                    onChange={(field, value) => setField(zone.id, field, value)}
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

@@ -56,7 +56,6 @@ export const MoldCanvas: React.FC = () => {
     const [ejectorPos, setEjectorPos] = useState(0);   // 0‒25 mm
     const [phase, setPhase] = useState<CyclePhase>('ESPERA');
     const [showPlastic, setShowPlastic] = useState(false);
-    const [showNeedle, setShowNeedle] = useState(false);
     const [fallingPiece, setFallingPiece] = useState(false);
     const cancelRef = useRef(false);
 
@@ -74,11 +73,9 @@ export const MoldCanvas: React.FC = () => {
 
         // 2 ─ INJECT
         setPhase('INYECTANDO');
-        setShowNeedle(true);
         await sleep(INJECT_DELAY);
         setShowPlastic(true);
         await sleep(INJECT_FILL_DELAY);
-        setShowNeedle(false);
 
         // 3 ─ COOL
         setPhase('ENFRIANDO');
@@ -234,25 +231,12 @@ export const MoldCanvas: React.FC = () => {
                         <circle cx="35" cy="80" r="6" fill="url(#moldCoolGrad)" stroke="#0ea5e9" strokeWidth="1" />
                         <circle cx="35" cy="190" r="6" fill="url(#moldCoolGrad)" stroke="#0ea5e9" strokeWidth="1" />
                         <circle cx="15" cy="230" r="6" fill="url(#moldCoolGrad)" stroke="#0ea5e9" strokeWidth="1" />
-                        {/* Plastic piece inside cavity */}
-                        <path
-                            d="M0,105 L15,105 L15,115 L22,115 L22,155 L15,155 L15,165 L0,165 Z"
-                            fill="#1e3a8a"
-                            opacity={showPlastic ? 1 : 0}
-                            style={{ transition: 'opacity 0.3s ease' }}
-                        />
                     </g>
 
                     {/* ── Injection Unit (Right side nozzle) ── */}
                     <g transform="translate(490, 155)">
                         <path d="M0,20 L30,45 L110,45 L110,-5 L30,-5 L0,20" fill="#64748b" stroke="#334155" strokeWidth="1" />
                         <rect x="25" y="-10" width="15" height="60" fill="#f97316" rx="2" />
-                        {/* Nozzle stream */}
-                        <rect
-                            x="-15" y="18" width="15" height="4" fill="#1e3a8a" rx="1"
-                            opacity={showNeedle ? 1 : 0}
-                            style={{ transition: 'opacity 0.15s ease' }}
-                        />
                     </g>
 
                     {/* ── Moving Side (Left) ── */}
@@ -284,6 +268,14 @@ export const MoldCanvas: React.FC = () => {
                             <rect x={137 + ejectorPos} y="162" width={8} height="3" fill="#64748b" rx="1" />
                         </g>
 
+                        {/* Plastic piece inside cavity (stays on the moving/core side) */}
+                        <path
+                            d={`M${130 + ejectorPos},105 L${145 + ejectorPos},105 L${145 + ejectorPos},115 L${152 + ejectorPos},115 L${152 + ejectorPos},155 L${145 + ejectorPos},155 L${145 + ejectorPos},165 L${130 + ejectorPos},165 Z`}
+                            fill="#1e3a8a"
+                            opacity={showPlastic ? 1 : 0}
+                            style={{ transition: 'opacity 0.3s ease' }}
+                        />
+
                         {/* Cooling channels */}
                         <circle cx="115" cy="60" r="6" fill="url(#moldCoolGrad)" stroke="#0ea5e9" strokeWidth="1" />
                         <circle cx="115" cy="210" r="6" fill="url(#moldCoolGrad)" stroke="#0ea5e9" strokeWidth="1" />
@@ -292,7 +284,7 @@ export const MoldCanvas: React.FC = () => {
                     {/* ── Falling piece animation ── */}
                     {fallingPiece && (
                         <g>
-                            <rect x={movingX + 140} y="200" width="18" height="50" fill="#1e3a8a" rx="2" opacity="0.8">
+                            <rect x={movingX + 160} y="200" width="18" height="50" fill="#1e3a8a" rx="2" opacity="0.8">
                                 <animateTransform
                                     attributeName="transform" type="translate"
                                     from="0 0" to="0 120"
