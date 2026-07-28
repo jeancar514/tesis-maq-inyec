@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Frontend - React/TypeScript - Exclusiones de Graphify
+# ═══════════════════════════════════════════════════════════════════════
+
+# Dependencias
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+.vite/
+.turbo/
+
+# Tests (opcional - descomenta si quieres incluir tests en el grafo)
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+coverage/
+
+# Archivos de configuración (opcional - descomenta si no quieres en el grafo)
+# *.config.js
+# *.config.ts
+# vite.config.ts
+# tsconfig.json
+
+# Temporales
+.env.local
+.env.*.local
+*.tmp

@@ -171,3 +171,32 @@ ON CONFLICT (perfil_id, orden) DO UPDATE SET
     etiqueta  = EXCLUDED.etiqueta,
     posicion  = EXCLUDED.posicion,
     velocidad = EXCLUDED.velocidad;
+
+
+-- ── injection · Carro de Inyección · lectura inicial en tiempo real ──────────
+INSERT INTO injection.car_carro_lectura (velocidad, posicion, torque_secundario, capturado_en) VALUES
+    (85.2, 145.7, 42.5, NOW() - INTERVAL '10 minutes'),
+    (92.0, 138.0, 48.0, NOW() - INTERVAL '9 minutes'),
+    (78.5, 152.3, 39.2, NOW() - INTERVAL '8 minutes'),
+    (88.0, 142.1, 45.7, NOW() - INTERVAL '7 minutes'),
+    (95.3, 135.8, 50.1, NOW() - INTERVAL '6 minutes'),
+    (81.2, 148.5, 41.3, NOW() - INTERVAL '5 minutes'),
+    (90.7, 140.2, 47.2, NOW() - INTERVAL '4 minutes'),
+    (76.9, 155.0, 38.5, NOW() - INTERVAL '3 minutes'),
+    (93.5, 137.6, 49.0, NOW() - INTERVAL '2 minutes'),
+    (85.0, 143.8, 43.5, NOW() - INTERVAL '1 minute')
+ON CONFLICT (id) DO NOTHING;
+
+-- ── ejection · Eyector · lectura inicial en tiempo real ───────────────────────
+INSERT INTO ejection.eyc_eyector_lectura (velocidad, posicion, torque_secundario, capturado_en) VALUES
+    (42.8, 28.5, 35.2, NOW() - INTERVAL '10 minutes'),
+    (48.5, 32.0, 38.0, NOW() - INTERVAL '9 minutes'),
+    (38.2, 24.8, 32.5, NOW() - INTERVAL '8 minutes'),
+    (45.0, 30.2, 36.8, NOW() - INTERVAL '7 minutes'),
+    (52.3, 35.5, 40.2, NOW() - INTERVAL '6 minutes'),
+    (40.5, 26.3, 33.8, NOW() - INTERVAL '5 minutes'),
+    (47.2, 31.8, 37.5, NOW() - INTERVAL '4 minutes'),
+    (36.8, 23.2, 31.0, NOW() - INTERVAL '3 minutes'),
+    (50.0, 34.0, 39.5, NOW() - INTERVAL '2 minutes'),
+    (43.5, 29.0, 35.8, NOW() - INTERVAL '1 minute')
+ON CONFLICT (id) DO NOTHING;

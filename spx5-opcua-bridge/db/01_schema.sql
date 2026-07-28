@@ -245,6 +245,17 @@ CREATE TABLE IF NOT EXISTS injection.car_carro_config (
     actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Carro de Inyección · lecturas en tiempo real (velocidad, posición, torque secundario)
+CREATE TABLE IF NOT EXISTS injection.car_carro_lectura (
+    id                  BIGSERIAL PRIMARY KEY,
+    velocidad           DOUBLE PRECISION,   -- mm/s  — Modbus 158
+    posicion            DOUBLE PRECISION,   -- mm    — Modbus 178
+    torque_secundario   DOUBLE PRECISION,   -- %     — Modbus 168
+    capturado_en        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_injection_car_lectura_fecha ON injection.car_carro_lectura(capturado_en DESC);
+
 -- ═════════════════════════════════════════════════════════════════════════════
 -- ejection — FooterNav "Eyección"
 -- ═════════════════════════════════════════════════════════════════════════════
@@ -260,6 +271,17 @@ CREATE TABLE IF NOT EXISTS ejection.eyc_eyector_config (
     velocidad_posicion  DOUBLE PRECISION NOT NULL DEFAULT 0,
     actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Eyector · lecturas en tiempo real (velocidad, posición, torque secundario)
+CREATE TABLE IF NOT EXISTS ejection.eyc_eyector_lectura (
+    id                  BIGSERIAL PRIMARY KEY,
+    velocidad           DOUBLE PRECISION,   -- mm/s  — Modbus 238
+    posicion            DOUBLE PRECISION,   -- mm    — Modbus 258
+    torque_secundario   DOUBLE PRECISION,   -- %     — Modbus 248
+    capturado_en        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ejection_eyc_lectura_fecha ON ejection.eyc_eyector_lectura(capturado_en DESC);
 
 -- Perfil de Eyección · etapas
 CREATE TABLE IF NOT EXISTS ejection.pey_etapa_eyeccion (

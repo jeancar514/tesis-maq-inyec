@@ -4,7 +4,9 @@ const {
     upsertHusilloConfig,
     upsertMoldeConfig,
     upsertCarroConfig,
+    insertCarroLectura,
     upsertEyectorConfig,
+    insertEyectorLectura,
     upsertModoOperacion,
     upsertComandoCiclo,
 } = require('./dbClient');
@@ -98,6 +100,13 @@ async function saveSnapshot() {
             velocidadPosicion: v.carriageVelocidadPosicion,
         });
 
+        // Carro de inyección (lecturas en tiempo real)
+        await insertCarroLectura({
+            velocidad:        v.carriageVelocidad,
+            posicion:         v.carriagePosicion,
+            torqueSecundario: v.carriageTorqueSecundario,
+        });
+
         // Eyector (setpoints)
         await upsertEyectorConfig({
             controlEncendido:  v.ejectorControlEncendido,
@@ -106,6 +115,13 @@ async function saveSnapshot() {
             posicion1:         v.ejectorPosicion1,
             posicion2:         v.ejectorPosicion2,
             velocidadPosicion: v.ejectorVelocidadPosicion,
+        });
+
+        // Eyector (lecturas en tiempo real)
+        await insertEyectorLectura({
+            velocidad:        v.ejectorVelocidad,
+            posicion:         v.ejectorPosicion,
+            torqueSecundario: v.ejectorTorqueSecundario,
         });
 
         logger.info('Snapshot normalizado guardado en DB');

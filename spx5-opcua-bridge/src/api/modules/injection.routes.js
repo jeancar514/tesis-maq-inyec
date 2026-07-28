@@ -107,7 +107,70 @@ router.post(ROUTES.SCREW_CONTROL, async (req, res) => {
 });
 
 // Carro de inyección: control genérico (doble fuente db/modbus) + movimiento por posición.
-attachControlRoutes(router, ROUTES.CARRIAGE_CONTROL, REGISTER_TYPES.CARRIAGE_CONTROL, dbClient.getCarroConfig);
+// En modo 'db' el GET combina setpoints (car_carro_config) + última lectura en tiempo real (car_carro_lectura).
+const { readValuesByType } = require('./_shared');
+
+router.get(ROUTES.CARRIAGE_CONTROL, async (req, res) => {
+    try {
+        if (config.dataSource === 'db') {
+            const [setpoints, lectura] = await Promise.all([
+                dbClient.getCarroConfig(),
+                dbClient.getCarroLectura(),
+            ]);
+            if (setpoints || lectura) {
+                return res.json({ ...(setpoints || {}), ...(lectura || {}), _source: 'db' });
+            }
+        }
+        res.json({ ...readValuesByType(REGISTER_TYPES.CARRIAGE_CONTROL), _source: 'modbus' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post(ROUTES.CARRIAGE_CONTROL, async (req, res) => {
+    const writableNames = registerManager.getAll()
+        .filter(reg => reg.type === REGISTER_TYPES.CARRIAGE_CONTROL && reg.writable)
+        .map(reg => reg.name);
+    const entries = Object.entries(req.body).filter(([k]) => writableNames.includes(k));
+    if (entries.length === 0)
+        return res.status(400).json({ error: `Body must include at least one of: ${writableNames.join(', ')}` });
+
+    const results = {};
+    for (const [name, value] of entries) {
+        const reg = registerManager.getAll().find(r => r.name === name);
+        if (!reg) { results[name] = { error: 'register not found' }; continue; }
+        if (!reg.writable) { results[name] = { error: 'read-only' }; continue; }
+        try {
+            await modbusClient.writeByConfig(reg, Number(value));
+            opcuaServer.updateCachedValue(reg.name, Number(value));
+            opcuaServer.markAsWritten(reg.name);
+            results[name] = { success: true, value: Number(value) };
+        } catch (err) {
+            results[name] = { error: err.message };
+        }
+    }
+    res.json(results);
+});
+
+// GET /api/carriage-control/lectura — última lectura en tiempo real del carro (velocidad, posición, torque secundario).
+router.get(`${ROUTES.CARRIAGE_CONTROL}/lectura`, async (req, res) => {
+    try {
+        if (config.dataSource === 'db') {
+            const lectura = await dbClient.getCarroLectura();
+            if (lectura) return res.json({ ...lectura, _source: 'db' });
+        }
+        const vals = readValuesByType(REGISTER_TYPES.CARRIAGE_CONTROL);
+        res.json({
+            carriageVelocidad:        vals.carriageVelocidad        ?? 0,
+            carriagePosicion:         vals.carriagePosicion         ?? 0,
+            carriageTorqueSecundario: vals.carriageTorqueSecundario ?? 0,
+            _source: 'modbus',
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 attachMoveRoute(router, `${ROUTES.CARRIAGE_CONTROL}/move`, REGISTER_TYPES.CARRIAGE_CONTROL);
 
 // ── Perfil de Inyección (etapas, persistido en DB) ─────────────────────────

@@ -147,6 +147,31 @@ async function getCarroConfig() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// injection · car — CARRO DE INYECCIÓN — lecturas en tiempo real
+// ─────────────────────────────────────────────────────────────────────────────
+async function insertCarroLectura(v) {
+    await pool.query(
+        `INSERT INTO injection.car_carro_lectura (velocidad, posicion, torque_secundario)
+         VALUES ($1, $2, $3)`,
+        [v.velocidad ?? null, v.posicion ?? null, v.torqueSecundario ?? null]
+    );
+}
+
+async function getCarroLectura() {
+    const { rows } = await pool.query(
+        `SELECT velocidad, posicion, torque_secundario
+         FROM injection.car_carro_lectura ORDER BY capturado_en DESC LIMIT 1`
+    );
+    if (!rows.length) return null;
+    const r = rows[0];
+    return {
+        carriageVelocidad:         r.velocidad         !== null ? Number(r.velocidad)         : null,
+        carriagePosicion:          r.posicion           !== null ? Number(r.posicion)           : null,
+        carriageTorqueSecundario:  r.torque_secundario  !== null ? Number(r.torque_secundario)  : null,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ejection · eyc — EYECTOR — setpoints (fila única id = 1)
 // ─────────────────────────────────────────────────────────────────────────────
 async function upsertEyectorConfig(v) {
@@ -181,6 +206,31 @@ async function getEyectorConfig() {
         ejectorPosicion1:         Number(r.posicion1) || 0,
         ejectorPosicion2:         Number(r.posicion2) || 0,
         ejectorVelocidadPosicion: Number(r.velocidad_posicion) || 0,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ejection · eyc — EYECTOR — lecturas en tiempo real
+// ─────────────────────────────────────────────────────────────────────────────
+async function insertEyectorLectura(v) {
+    await pool.query(
+        `INSERT INTO ejection.eyc_eyector_lectura (velocidad, posicion, torque_secundario)
+         VALUES ($1, $2, $3)`,
+        [v.velocidad ?? null, v.posicion ?? null, v.torqueSecundario ?? null]
+    );
+}
+
+async function getEyectorLectura() {
+    const { rows } = await pool.query(
+        `SELECT velocidad, posicion, torque_secundario
+         FROM ejection.eyc_eyector_lectura ORDER BY capturado_en DESC LIMIT 1`
+    );
+    if (!rows.length) return null;
+    const r = rows[0];
+    return {
+        ejectorVelocidad:         r.velocidad         !== null ? Number(r.velocidad)         : null,
+        ejectorPosicion:          r.posicion           !== null ? Number(r.posicion)           : null,
+        ejectorTorqueSecundario:  r.torque_secundario  !== null ? Number(r.torque_secundario)  : null,
     };
 }
 
@@ -778,8 +828,12 @@ module.exports = {
     upsertMoldeConfig,
     getCarroConfig,
     upsertCarroConfig,
+    insertCarroLectura,
+    getCarroLectura,
     getEyectorConfig,
     upsertEyectorConfig,
+    insertEyectorLectura,
+    getEyectorLectura,
     upsertModoOperacion,
     upsertComandoCiclo,
     insertZonaLectura,

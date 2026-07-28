@@ -1,0 +1,34 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Backend - Node.js/Express - Exclusiones de Graphify
+# ═══════════════════════════════════════════════════════════════════════
+
+# Dependencias
+node_modules/
+package-lock.json
+
+# Tests (opcional - descomenta si quieres incluir tests en el grafo)
+*.test.js
+*.spec.js
+tests/
+__tests__/
+coverage/
+
+# Logs y temporales
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# Archivos de configuración sensibles
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Archivos de desarrollo
+.DS_Store
+Thumbs.db
