@@ -108,7 +108,7 @@ router.post(ROUTES.SCREW_CONTROL, async (req, res) => {
 
 // Carro de inyección: control genérico (doble fuente db/modbus) + movimiento por posición.
 // En modo 'db' el GET combina setpoints (car_carro_config) + última lectura en tiempo real (car_carro_lectura).
-const { readValuesByType } = require('./_shared');
+const { readValuesByType, attachControlPostRoute } = require('./_shared');
 
 router.get(ROUTES.CARRIAGE_CONTROL, async (req, res) => {
     try {
@@ -127,30 +127,10 @@ router.get(ROUTES.CARRIAGE_CONTROL, async (req, res) => {
     }
 });
 
-router.post(ROUTES.CARRIAGE_CONTROL, async (req, res) => {
-    const writableNames = registerManager.getAll()
-        .filter(reg => reg.type === REGISTER_TYPES.CARRIAGE_CONTROL && reg.writable)
-        .map(reg => reg.name);
-    const entries = Object.entries(req.body).filter(([k]) => writableNames.includes(k));
-    if (entries.length === 0)
-        return res.status(400).json({ error: `Body must include at least one of: ${writableNames.join(', ')}` });
-
-    const results = {};
-    for (const [name, value] of entries) {
-        const reg = registerManager.getAll().find(r => r.name === name);
-        if (!reg) { results[name] = { error: 'register not found' }; continue; }
-        if (!reg.writable) { results[name] = { error: 'read-only' }; continue; }
-        try {
-            await modbusClient.writeByConfig(reg, Number(value));
-            opcuaServer.updateCachedValue(reg.name, Number(value));
-            opcuaServer.markAsWritten(reg.name);
-            results[name] = { success: true, value: Number(value) };
-        } catch (err) {
-            results[name] = { error: err.message };
-        }
-    }
-    res.json(results);
-});
+// POST /api/carriage-control — Encendido, Torque, Posición 1/2, Velocidad en
+// Posición. Cambio de Posición nunca se acepta aquí: attachControlPostRoute lo
+// dispara solo cuando Posición 1 y/o 2 vienen en el body.
+attachControlPostRoute(router, ROUTES.CARRIAGE_CONTROL, REGISTER_TYPES.CARRIAGE_CONTROL);
 
 // GET /api/carriage-control/lectura — última lectura en tiempo real del carro (velocidad, posición, torque secundario).
 router.get(`${ROUTES.CARRIAGE_CONTROL}/lectura`, async (req, res) => {

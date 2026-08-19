@@ -186,17 +186,25 @@ class ApiServer {
     }
 
     // Construye el payload del servo de cierre/molde (servomotor_2). En modo 'db'
-    // lee clamp.vgn_servomotor_lectura; en 'modbus' el PLC no expone registros
-    // dedicados a este eje, así que se aproxima con la misma caché de "servo".
+    // lee clamp.vgn_servomotor_lectura; en 'modbus' usa los registros dedicados
+    // del molde (type: mold_control, direcciones 78/88/98/108/118), independientes
+    // de los del servo de Inyección (servomotor_1).
     async _buildMoldServoPayload() {
         if (config.dataSource === 'db') {
             const lectura = await dbClient.getMoldServoLectura();
             if (lectura) return lectura;
         }
-        const servoRegs = registerManager.getAll().filter(reg => reg.type === REGISTER_TYPES.SERVO);
-        const vals = {};
-        servoRegs.forEach(reg => { vals[reg.name] = opcuaServer._getCachedValue(reg); });
-        return vals;
+        const getVal = (name) => {
+            const reg = registerManager.getAll().find(r => r.name === name);
+            return reg ? opcuaServer._getCachedValue(reg) : 0;
+        };
+        return {
+            speed: getVal('moldVelocidad'),
+            torque: getVal('moldTorqueSecundario'),
+            position: getVal('moldPosicion'),
+            current: getVal('moldCorriente'),
+            voltage: getVal('moldVoltaje'),
+        };
     }
 
     async broadcastServoUpdate() {

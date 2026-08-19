@@ -34,8 +34,10 @@ export const MoldControlPanel: React.FC = () => {
             await repo.update({
                 moldControlEncendido: draft.moldControlEncendido,
                 moldTorque: draft.moldTorque,
-                moldCambioPosicion: draft.moldCambioPosicion,
                 moldVelocidadPosicion: draft.moldVelocidadPosicion,
+                // moldPosicion1/2 y moldCambioPosicion NO se envían desde aquí:
+                // los llena y dispara solo el flujo "Mover a" (MovePositionField
+                // → /move), no hay campos manuales para ellos.
             });
             setStatus('ok');
         } catch {
@@ -62,10 +64,9 @@ export const MoldControlPanel: React.FC = () => {
             <div className="space-y-3">
                 <PowerToggle on={encendido} onToggle={() => handleChange('moldControlEncendido', encendido ? 0 : 37)} />
 
-                <MovePositionField onMove={(t) => repo.move(t, draft.moldCambioPosicion)} unit="mm" />
+                <MovePositionField onMove={(t) => repo.move(t)} unit="mm" />
 
                 <NumberField icon="compress" label="Torque" unit="%" value={draft.moldTorque} min={0} max={100} onChange={v => handleChange('moldTorque', v)} />
-                <NumberField icon="swap_horiz" label="Cambio de Posición" unit="mm" value={draft.moldCambioPosicion} min={0} max={2000} onChange={v => handleChange('moldCambioPosicion', v)} />
                 <NumberField icon="speed" label="Velocidad en Posición" unit="mm/s" value={draft.moldVelocidadPosicion} min={0} max={500} onChange={v => handleChange('moldVelocidadPosicion', v)} />
             </div>
 

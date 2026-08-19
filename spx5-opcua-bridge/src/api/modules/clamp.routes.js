@@ -9,7 +9,7 @@ const registerManager = require('../../utils/registerManager');
 const logger = require('../../utils/logger');
 const dbClient = require('../../db/dbClient');
 const { ROUTES, REGISTER_TYPES } = require('../constant');
-const { readValuesByType, attachMoveRoute } = require('./_shared');
+const { readValuesByType, attachMoveRoute, attachControlPostRoute } = require('./_shared');
 
 const router = express.Router();
 
@@ -27,44 +27,33 @@ router.get(ROUTES.MOLD_CONTROL, async (req, res) => {
     }
 });
 
-// POST /api/mold-control — escribir registros de control del molde.
-router.post(ROUTES.MOLD_CONTROL, async (req, res) => {
-    const allowed = ['moldControlEncendido', 'moldTorque', 'moldCambioPosicion', 'moldPosicion1', 'moldPosicion2', 'moldVelocidadPosicion'];
-    const entries = Object.entries(req.body).filter(([k]) => allowed.includes(k));
-    if (entries.length === 0)
-        return res.status(400).json({ error: `Body must include at least one of: ${allowed.join(', ')}` });
-
-    const results = {};
-    for (const [name, value] of entries) {
-        const reg = registerManager.getAll().find(r => r.name === name);
-        if (!reg) { results[name] = { error: 'register not found' }; continue; }
-        if (!reg.writable) { results[name] = { error: 'read-only' }; continue; }
-        try {
-            await modbusClient.writeByConfig(reg, Number(value));
-            opcuaServer.updateCachedValue(reg.name, Number(value));
-            opcuaServer.markAsWritten(reg.name);
-            results[name] = { success: true, value: Number(value) };
-        } catch (err) {
-            results[name] = { error: err.message };
-        }
-    }
-    res.json(results);
-});
+// POST /api/mold-control — escribir registros de control del molde (Encendido,
+// Torque, Posición 1/2, Velocidad en Posición). Cambio de Posición nunca se
+// acepta aquí: attachControlPostRoute lo dispara solo cuando Posición 1 y/o 2
+// vienen en el body (ver "Aplicar cambios" en el front).
+attachControlPostRoute(router, ROUTES.MOLD_CONTROL, REGISTER_TYPES.MOLD_CONTROL);
 
 attachMoveRoute(router, `${ROUTES.MOLD_CONTROL}/move`, REGISTER_TYPES.MOLD_CONTROL);
 
 // GET /api/mold-control/servo — lecturas del servomotor de cierre/molde (servomotor_2).
-// Nota: el SPX5 solo expone un único juego de registros Modbus tipo "servo"
-// (velocidad/torque/posición/corriente/voltaje). En modo 'db' se lee el
-// servomotor_2 real (persistido por el bridge); en modo 'modbus' se usa la
-// caché de registros como aproximación, ya que el PLC no discrimina por eje.
+// Registros Modbus dedicados (type: mold_control, direcciones 78/88/98/108/118),
+// independientes de los del servo de Inyección (servomotor_1, type: servo).
+// En modo 'db' se lee el servomotor_2 real (persistido por el bridge).
 router.get(ROUTES.MOLD_SERVO, async (req, res) => {
     try {
         if (config.dataSource === 'db') {
             const servo = await dbClient.getMoldServoLectura();
             if (servo) return res.json({ ...servo, _source: 'db' });
         }
-        res.json({ ...readValuesByType(REGISTER_TYPES.SERVO), _source: 'modbus' });
+        const vals = readValuesByType(REGISTER_TYPES.MOLD_CONTROL);
+        res.json({
+            speed:    vals.moldVelocidad        ?? 0,
+            torque:   vals.moldTorqueSecundario  ?? 0,
+            position: vals.moldPosicion          ?? 0,
+            current:  vals.moldCorriente         ?? 0,
+            voltage:  vals.moldVoltaje           ?? 0,
+            _source: 'modbus',
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

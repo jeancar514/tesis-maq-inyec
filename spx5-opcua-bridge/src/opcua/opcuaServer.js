@@ -116,7 +116,10 @@ class OPCUABridgeServer {
     }
 
     _getCachedValue(reg) {
-        return this._valueCache.get(reg.name) ?? this._getDefaultValue(reg.opcuaDataType);
+        if (this._valueCache.has(reg.name)) return this._valueCache.get(reg.name);
+        // Algunos registros tienen un valor inicial propio (ej. "Cambio de
+        // Posición" siempre arranca en 2), distinto del default genérico por tipo.
+        return reg.defaultValue !== undefined ? reg.defaultValue : this._getDefaultValue(reg.opcuaDataType);
     }
 
     updateCachedValue(name, value, fromPolling = false) {
@@ -142,6 +145,8 @@ class OPCUABridgeServer {
                     break;
                 case REGISTER_TYPES.SERVO:
                     ApiServer.broadcastServoUpdate?.();
+                    break;
+                case REGISTER_TYPES.MOLD_CONTROL:
                     ApiServer.broadcastMoldServoUpdate?.();
                     break;
                 case REGISTER_TYPES.OPERATION_MODE:

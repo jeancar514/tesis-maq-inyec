@@ -37,8 +37,10 @@ export const CarriageControlPanel: React.FC = () => {
             await repo.update({
                 carriageControlEncendido: draft.carriageControlEncendido,
                 carriageTorque: draft.carriageTorque,
-                carriageCambioPosicion: draft.carriageCambioPosicion,
                 carriageVelocidadPosicion: draft.carriageVelocidadPosicion,
+                // carriagePosicion1/2 y carriageCambioPosicion NO se envían desde
+                // aquí: los llena y dispara solo el flujo "Mover a" (MovePositionField
+                // → /move), no hay campos manuales para ellos.
             });
             setStatus('ok');
         } catch {
@@ -65,10 +67,9 @@ export const CarriageControlPanel: React.FC = () => {
             <div className="space-y-3">
                 <PowerToggle on={encendido} onToggle={() => handleChange('carriageControlEncendido', encendido ? 0 : 37)} />
 
-                <MovePositionField onMove={(t) => repo.move(t, draft.carriageCambioPosicion)} unit="mm" />
+                <MovePositionField onMove={(t) => repo.move(t)} unit="mm" />
 
                 <NumberField icon="compress" label="Torque" unit="%" value={draft.carriageTorque} min={0} max={100} onChange={v => handleChange('carriageTorque', v)} />
-                <NumberField icon="swap_horiz" label="Cambio de Posición" unit="mm" value={draft.carriageCambioPosicion} min={0} max={2000} onChange={v => handleChange('carriageCambioPosicion', v)} />
                 <NumberField icon="speed" label="Velocidad en Posición" unit="mm/s" value={draft.carriageVelocidadPosicion} min={0} max={500} onChange={v => handleChange('carriageVelocidadPosicion', v)} />
             </div>
 

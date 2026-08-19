@@ -37,8 +37,10 @@ export const EjectorControlPanel: React.FC = () => {
             await repo.update({
                 ejectorControlEncendido: draft.ejectorControlEncendido,
                 ejectorTorque: draft.ejectorTorque,
-                ejectorCambioPosicion: draft.ejectorCambioPosicion,
                 ejectorVelocidadPosicion: draft.ejectorVelocidadPosicion,
+                // ejectorPosicion1/2 y ejectorCambioPosicion NO se envían desde
+                // aquí: los llena y dispara solo el flujo "Mover a" (MovePositionField
+                // → /move), no hay campos manuales para ellos.
             });
             setStatus('ok');
         } catch {
@@ -65,10 +67,9 @@ export const EjectorControlPanel: React.FC = () => {
             <div className="space-y-3">
                 <PowerToggle on={encendido} onToggle={() => handleChange('ejectorControlEncendido', encendido ? 0 : 37)} />
 
-                <MovePositionField onMove={(t) => repo.move(t, draft.ejectorCambioPosicion)} unit="mm" />
+                <MovePositionField onMove={(t) => repo.move(t)} unit="mm" />
 
                 <NumberField icon="compress" label="Torque" unit="%" value={draft.ejectorTorque} min={0} max={100} onChange={v => handleChange('ejectorTorque', v)} />
-                <NumberField icon="swap_horiz" label="Cambio de Posición" unit="mm" value={draft.ejectorCambioPosicion} min={0} max={2000} onChange={v => handleChange('ejectorCambioPosicion', v)} />
                 <NumberField icon="speed" label="Velocidad en Posición" unit="mm/s" value={draft.ejectorVelocidadPosicion} min={0} max={500} onChange={v => handleChange('ejectorVelocidadPosicion', v)} />
             </div>
 

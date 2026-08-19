@@ -2,7 +2,7 @@ export interface EjectorControlData {
     // ── Setpoints (escribibles) ──
     ejectorControlEncendido: number;    // 0 | 37  — Encender               — Modbus 220
     ejectorTorque: number;              // %       — Torque                 — Modbus 240
-    ejectorCambioPosicion: number;      // mm      — Cambio de Posición     — Modbus 250
+    ejectorCambioPosicion: number;      // 1 | 2   — selector Pos.1/Pos.2   — Modbus 250
     ejectorPosicion1: number;           // mm      — Posición 1             — Modbus 260
     ejectorPosicion2: number;           // mm      — Posición 2             — Modbus 270
     ejectorVelocidadPosicion: number;   // mm/s    — Velocidad en Posición  — Modbus 280

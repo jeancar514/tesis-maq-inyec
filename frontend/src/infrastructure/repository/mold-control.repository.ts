@@ -13,8 +13,12 @@ export class MoldControlRepository {
         return httpService.post(BASE, payload);
     }
 
-    /** Mueve a la posición objetivo: el backend fija Pos1=actual, Pos2=objetivo y dispara Cambio de Posición. */
-    async move(target: number, cambio?: number): Promise<{ success?: boolean; currentPosition?: number; target?: number; error?: string }> {
-        return httpService.post(`${BASE}/move`, cambio !== undefined ? { target, cambio } : { target });
+    /**
+     * Mueve a la posición objetivo. Solo se envía "target": el backend decide
+     * internamente Pos1/Pos2 (según dónde está realmente el eje) y dispara
+     * "Cambio de Posición" por su cuenta — el front nunca debe fijar ese valor.
+     */
+    async move(target: number): Promise<{ success?: boolean; currentPosition?: number; target?: number; error?: string }> {
+        return httpService.post(`${BASE}/move`, { target });
     }
 }
