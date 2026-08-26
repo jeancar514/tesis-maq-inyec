@@ -37,10 +37,13 @@ export const EjectorControlPanel: React.FC = () => {
             await repo.update({
                 ejectorControlEncendido: draft.ejectorControlEncendido,
                 ejectorTorque: draft.ejectorTorque,
+                ejectorPosicion1: draft.ejectorPosicion1,
+                ejectorPosicion2: draft.ejectorPosicion2,
                 ejectorVelocidadPosicion: draft.ejectorVelocidadPosicion,
-                // ejectorPosicion1/2 y ejectorCambioPosicion NO se envían desde
-                // aquí: los llena y dispara solo el flujo "Mover a" (MovePositionField
-                // → /move), no hay campos manuales para ellos.
+                // ejectorCambioPosicion NO se envía nunca desde el front: al incluir
+                // Posición 1/2 (aunque no tengan campo editable propio, ya vienen
+                // cargadas desde el último GET), el backend dispara el selector
+                // Cambio de Posición solo, igual que hace el botón "Mover a".
             });
             setStatus('ok');
         } catch {

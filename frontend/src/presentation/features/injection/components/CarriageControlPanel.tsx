@@ -37,10 +37,13 @@ export const CarriageControlPanel: React.FC = () => {
             await repo.update({
                 carriageControlEncendido: draft.carriageControlEncendido,
                 carriageTorque: draft.carriageTorque,
+                carriagePosicion1: draft.carriagePosicion1,
+                carriagePosicion2: draft.carriagePosicion2,
                 carriageVelocidadPosicion: draft.carriageVelocidadPosicion,
-                // carriagePosicion1/2 y carriageCambioPosicion NO se envían desde
-                // aquí: los llena y dispara solo el flujo "Mover a" (MovePositionField
-                // → /move), no hay campos manuales para ellos.
+                // carriageCambioPosicion NO se envía nunca desde el front: al incluir
+                // Posición 1/2 (aunque no tengan campo editable propio, ya vienen
+                // cargadas desde el último GET), el backend dispara el selector
+                // Cambio de Posición solo, igual que hace el botón "Mover a".
             });
             setStatus('ok');
         } catch {

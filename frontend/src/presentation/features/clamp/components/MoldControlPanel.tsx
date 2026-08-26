@@ -34,10 +34,13 @@ export const MoldControlPanel: React.FC = () => {
             await repo.update({
                 moldControlEncendido: draft.moldControlEncendido,
                 moldTorque: draft.moldTorque,
+                moldPosicion1: draft.moldPosicion1,
+                moldPosicion2: draft.moldPosicion2,
                 moldVelocidadPosicion: draft.moldVelocidadPosicion,
-                // moldPosicion1/2 y moldCambioPosicion NO se envían desde aquí:
-                // los llena y dispara solo el flujo "Mover a" (MovePositionField
-                // → /move), no hay campos manuales para ellos.
+                // moldCambioPosicion NO se envía nunca desde el front: al incluir
+                // Posición 1/2 (aunque no tengan campo editable propio, ya vienen
+                // cargadas desde el último GET), el backend dispara el selector
+                // Cambio de Posición solo, igual que hace el botón "Mover a".
             });
             setStatus('ok');
         } catch {

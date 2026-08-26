@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 const { REGISTER_TYPES } = require('./constant');
 const realtimeBus = require('./realtimeBus');
 const dbClient = require('../db/dbClient');
+const { read32BitValue } = require('./modules/_shared');
 
 // Routers por módulo (espejo de los módulos del FooterNav del frontend)
 const dashboardRoutes = require('./modules/dashboard.routes');
@@ -201,7 +202,10 @@ class ApiServer {
         return {
             speed: getVal('moldVelocidad'),
             torque: getVal('moldTorqueSecundario'),
-            position: getVal('moldPosicion'),
+            // moldPosicion es ahora un par de 32 bits (moldPosicionLow/High);
+            // se recompone con read32BitValue en lugar de leerse como registro
+            // literal (ver ajuste de posiciones a enteros de 32 bits con signo).
+            position: read32BitValue('moldPosicion') ?? 0,
             current: getVal('moldCorriente'),
             voltage: getVal('moldVoltaje'),
         };

@@ -26,8 +26,12 @@ export const MovePositionField: React.FC<MovePositionFieldProps> = ({
     onMove,
     label = 'Mover a Posición',
     unit = 'mm',
-    min = 0,
-    max = 2000,
+    // La posición es un entero CON SIGNO de 32 bits. Cada dirección Modbus del
+    // SPX5 solo admite 16 bits, así que el backend divide el valor en dos
+    // registros (palabra alta/baja) antes de escribirlo — la UI puede admitir
+    // todo el rango de un int32.
+    min = -2147483648,
+    max = 2147483647,
 }) => {
     const [target, setTarget] = useState<number>(0);
     const [moving, setMoving] = useState(false);

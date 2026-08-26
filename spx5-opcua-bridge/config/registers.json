@@ -257,8 +257,8 @@
     "type": "mold_control"
   },
   {
-    "name": "moldPosicion1",
-    "description": "Posición 1 de referencia del molde",
+    "name": "moldPosicion1Low",
+    "description": "Posición 1 de referencia del molde - Palabra baja (bits 0-15)",
     "modbusType": "holdingRegister",
     "modbusAddress": 100,
     "opcuaDataType": "Int16",
@@ -266,11 +266,27 @@
     "unit": "mm",
     "readable": true,
     "writable": true,
-    "type": "mold_control"
+    "type": "mold_control",
+    "is32Bit": true,
+    "bitPosition": "low"
   },
   {
-    "name": "moldPosicion2",
-    "description": "Posición 2 de referencia del molde",
+    "name": "moldPosicion1High",
+    "description": "Posición 1 de referencia del molde - Palabra alta (bits 16-31)",
+    "modbusType": "holdingRegister",
+    "modbusAddress": 101,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": true,
+    "type": "mold_control",
+    "is32Bit": true,
+    "bitPosition": "high"
+  },
+  {
+    "name": "moldPosicion2Low",
+    "description": "Posición 2 de referencia del molde - Palabra baja (bits 0-15)",
     "modbusType": "holdingRegister",
     "modbusAddress": 110,
     "opcuaDataType": "Int16",
@@ -278,7 +294,23 @@
     "unit": "mm",
     "readable": true,
     "writable": true,
-    "type": "mold_control"
+    "type": "mold_control",
+    "is32Bit": true,
+    "bitPosition": "low"
+  },
+  {
+    "name": "moldPosicion2High",
+    "description": "Posición 2 de referencia del molde - Palabra alta (bits 16-31)",
+    "modbusType": "holdingRegister",
+    "modbusAddress": 111,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": true,
+    "type": "mold_control",
+    "is32Bit": true,
+    "bitPosition": "high"
   },
   {
     "name": "moldVelocidadPosicion",
@@ -317,16 +349,32 @@
     "type": "mold_control"
   },
   {
-    "name": "moldPosicion",
-    "description": "Lectura de Posición del Servo de Cierre (molde, servomotor_2)",
+    "name": "moldPosicionLow",
+    "description": "Lectura de Posición del Servo de Cierre (molde, servomotor_2) - Palabra baja (bits 0-15)",
     "modbusType": "inputRegister",
     "modbusAddress": 98,
-    "opcuaDataType": "Double",
+    "opcuaDataType": "Int16",
     "scaleFactor": 1,
     "unit": "°",
     "readable": true,
     "writable": false,
-    "type": "mold_control"
+    "type": "mold_control",
+    "is32Bit": true,
+    "bitPosition": "low"
+  },
+  {
+    "name": "moldPosicionHigh",
+    "description": "Lectura de Posición del Servo de Cierre (molde, servomotor_2) - Palabra alta (bits 16-31)",
+    "modbusType": "inputRegister",
+    "modbusAddress": 99,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "°",
+    "readable": true,
+    "writable": false,
+    "type": "mold_control",
+    "is32Bit": true,
+    "bitPosition": "high"
   },
   {
     "name": "moldCorriente",
@@ -414,8 +462,8 @@
     "type": "carriage_control"
   },
   {
-    "name": "carriagePosicion",
-    "description": "Lectura de posición actual del carro de inyección",
+    "name": "carriagePosicionLow",
+    "description": "Lectura de posición actual del carro de inyección - Palabra baja (bits 0-15)",
     "modbusType": "inputRegister",
     "modbusAddress": 178,
     "opcuaDataType": "Int16",
@@ -423,11 +471,27 @@
     "unit": "mm",
     "readable": true,
     "writable": false,
-    "type": "carriage_control"
+    "type": "carriage_control",
+    "is32Bit": true,
+    "bitPosition": "low"
   },
   {
-    "name": "carriagePosicion1",
-    "description": "Posición 1 de referencia del carro de inyección",
+    "name": "carriagePosicionHigh",
+    "description": "Lectura de posición actual del carro de inyección - Palabra alta (bits 16-31)",
+    "modbusType": "inputRegister",
+    "modbusAddress": 179,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": false,
+    "type": "carriage_control",
+    "is32Bit": true,
+    "bitPosition": "high"
+  },
+  {
+    "name": "carriagePosicion1Low",
+    "description": "Posición 1 de referencia del carro de inyección - Palabra baja (bits 0-15)",
     "modbusType": "holdingRegister",
     "modbusAddress": 180,
     "opcuaDataType": "Int16",
@@ -435,11 +499,27 @@
     "unit": "mm",
     "readable": true,
     "writable": true,
-    "type": "carriage_control"
+    "type": "carriage_control",
+    "is32Bit": true,
+    "bitPosition": "low"
   },
   {
-    "name": "carriagePosicion2",
-    "description": "Posición 2 de referencia del carro de inyección",
+    "name": "carriagePosicion1High",
+    "description": "Posición 1 de referencia del carro de inyección - Palabra alta (bits 16-31)",
+    "modbusType": "holdingRegister",
+    "modbusAddress": 181,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": true,
+    "type": "carriage_control",
+    "is32Bit": true,
+    "bitPosition": "high"
+  },
+  {
+    "name": "carriagePosicion2Low",
+    "description": "Posición 2 de referencia del carro de inyección - Palabra baja (bits 0-15)",
     "modbusType": "holdingRegister",
     "modbusAddress": 190,
     "opcuaDataType": "Int16",
@@ -447,7 +527,23 @@
     "unit": "mm",
     "readable": true,
     "writable": true,
-    "type": "carriage_control"
+    "type": "carriage_control",
+    "is32Bit": true,
+    "bitPosition": "low"
+  },
+  {
+    "name": "carriagePosicion2High",
+    "description": "Posición 2 de referencia del carro de inyección - Palabra alta (bits 16-31)",
+    "modbusType": "holdingRegister",
+    "modbusAddress": 191,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": true,
+    "type": "carriage_control",
+    "is32Bit": true,
+    "bitPosition": "high"
   },
   {
     "name": "carriageVelocidadPosicion",
@@ -523,8 +619,8 @@
     "type": "ejector_control"
   },
   {
-    "name": "ejectorPosicion",
-    "description": "Lectura de posición actual del eyector",
+    "name": "ejectorPosicionLow",
+    "description": "Lectura de posición actual del eyector - Palabra baja (bits 0-15)",
     "modbusType": "inputRegister",
     "modbusAddress": 258,
     "opcuaDataType": "Int16",
@@ -532,11 +628,27 @@
     "unit": "mm",
     "readable": true,
     "writable": false,
-    "type": "ejector_control"
+    "type": "ejector_control",
+    "is32Bit": true,
+    "bitPosition": "low"
   },
   {
-    "name": "ejectorPosicion1",
-    "description": "Posición 1 de referencia del eyector",
+    "name": "ejectorPosicionHigh",
+    "description": "Lectura de posición actual del eyector - Palabra alta (bits 16-31)",
+    "modbusType": "inputRegister",
+    "modbusAddress": 259,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": false,
+    "type": "ejector_control",
+    "is32Bit": true,
+    "bitPosition": "high"
+  },
+  {
+    "name": "ejectorPosicion1Low",
+    "description": "Posición 1 de referencia del eyector - Palabra baja (bits 0-15)",
     "modbusType": "holdingRegister",
     "modbusAddress": 260,
     "opcuaDataType": "Int16",
@@ -544,11 +656,27 @@
     "unit": "mm",
     "readable": true,
     "writable": true,
-    "type": "ejector_control"
+    "type": "ejector_control",
+    "is32Bit": true,
+    "bitPosition": "low"
   },
   {
-    "name": "ejectorPosicion2",
-    "description": "Posición 2 de referencia del eyector",
+    "name": "ejectorPosicion1High",
+    "description": "Posición 1 de referencia del eyector - Palabra alta (bits 16-31)",
+    "modbusType": "holdingRegister",
+    "modbusAddress": 261,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": true,
+    "type": "ejector_control",
+    "is32Bit": true,
+    "bitPosition": "high"
+  },
+  {
+    "name": "ejectorPosicion2Low",
+    "description": "Posición 2 de referencia del eyector - Palabra baja (bits 0-15)",
     "modbusType": "holdingRegister",
     "modbusAddress": 270,
     "opcuaDataType": "Int16",
@@ -556,7 +684,23 @@
     "unit": "mm",
     "readable": true,
     "writable": true,
-    "type": "ejector_control"
+    "type": "ejector_control",
+    "is32Bit": true,
+    "bitPosition": "low"
+  },
+  {
+    "name": "ejectorPosicion2High",
+    "description": "Posición 2 de referencia del eyector - Palabra alta (bits 16-31)",
+    "modbusType": "holdingRegister",
+    "modbusAddress": 271,
+    "opcuaDataType": "Int16",
+    "scaleFactor": 1,
+    "unit": "mm",
+    "readable": true,
+    "writable": true,
+    "type": "ejector_control",
+    "is32Bit": true,
+    "bitPosition": "high"
   },
   {
     "name": "ejectorVelocidadPosicion",
