@@ -9,6 +9,7 @@ const registerManager = require('../../utils/registerManager');
 const dbClient = require('../../db/dbClient');
 const { ROUTES, REGISTER_TYPES } = require('../constant');
 const realtimeBus = require('../realtimeBus');
+const { readOperationModeFromRegisters } = require('./_shared');
 
 const router = express.Router();
 
@@ -28,24 +29,36 @@ router.get(ROUTES.KPIS, async (req, res) => {
             });
         }
         const kpiRegisters = registerManager.getAll().filter(reg =>
-            [REGISTER_TYPES.KPIS, REGISTER_TYPES.CYCLE_COMMAND, REGISTER_TYPES.OPERATION_MODE].includes(reg.type));
+            [REGISTER_TYPES.KPIS, REGISTER_TYPES.CYCLE_COMMAND].includes(reg.type));
         const kpiValues = {};
         kpiRegisters.forEach(reg => { kpiValues[reg.name] = opcuaServer._getCachedValue(reg); });
+        // operationMode se deriva de los dos registros mutuamente excluyentes
+        // (operationModeManual/operationModeAutomatico), igual que en GET /api/operation-mode,
+        // para que el resto del front (que espera un solo campo "operationMode") siga funcionando.
+        kpiValues.operationMode = readOperationModeFromRegisters();
         res.json(kpiValues);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// Modo de Operación: YA NO es un solo registro con valores 1/2. Ahora son DOS
+// registros booleanos mutuamente excluyentes (0/1 cada uno) — igual patrón que
+// Parada de Emergencia/Comando de Ciclo:
+//   - operationModeManual      (coil, dirección Modbus 353)
+//   - operationModeAutomatico  (coil, dirección Modbus 354)
+// Nunca pueden quedar ambos en 1 (ni ambos en 0): activar uno siempre implica
+// desactivar el otro en la misma escritura. El contrato externo del front NO
+// cambia (sigue enviando/recibiendo { mode: 1 | 2 }); la traducción a los dos
+// registros ocurre en readOperationModeFromRegisters() (_shared.js), reutilizada
+// también por apiServer.js para el WebSocket de KPIs.
 router.get(ROUTES.OPERATION_MODE, async (req, res) => {
     try {
         if (config.dataSource === 'db') {
             const estado = await dbClient.getEstadoMaquina();
             return res.json({ mode: estado?.mode ?? 1, _source: 'db' });
         }
-        const reg = registerManager.getAll().find(r => r.type === REGISTER_TYPES.OPERATION_MODE);
-        const value = reg ? opcuaServer._getCachedValue(reg) : 1;
-        res.json({ mode: Number(value) || 1 });
+        res.json({ mode: readOperationModeFromRegisters() });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -60,12 +73,24 @@ router.post(ROUTES.OPERATION_MODE, async (req, res) => {
             realtimeBus.operationMode(mode);
             return res.json({ success: true, mode, _source: 'db' });
         }
-        const reg = registerManager.getAll().find(r => r.type === REGISTER_TYPES.OPERATION_MODE);
-        if (!reg) return res.status(404).json({ error: 'Operation mode register not found' });
-        if (!reg.writable) return res.status(403).json({ error: 'Operation mode is read-only' });
-        await modbusClient.writeByConfig(reg, mode);
-        opcuaServer.updateCachedValue(reg.name, mode);
-        opcuaServer.markAsWritten(reg.name);
+        const all = registerManager.getAll();
+        const manualReg = all.find(r => r.name === 'operationModeManual');
+        const autoReg = all.find(r => r.name === 'operationModeAutomatico');
+        if (!manualReg || !autoReg) return res.status(404).json({ error: 'Operation mode registers not found' });
+        if (!manualReg.writable || !autoReg.writable) return res.status(403).json({ error: 'Operation mode is read-only' });
+
+        // Mutuamente excluyentes: el que corresponde al modo pedido pasa a 1 y
+        // el otro se fuerza a 0 en la misma operación, para que nunca puedan
+        // quedar los dos en el mismo estado (ni los dos en 1, ni los dos en 0).
+        const manualValue = mode === 1 ? 1 : 0;
+        const autoValue = mode === 2 ? 1 : 0;
+        await modbusClient.writeByConfig(manualReg, manualValue);
+        await modbusClient.writeByConfig(autoReg, autoValue);
+        opcuaServer.updateCachedValue(manualReg.name, manualValue);
+        opcuaServer.updateCachedValue(autoReg.name, autoValue);
+        opcuaServer.markAsWritten(manualReg.name);
+        opcuaServer.markAsWritten(autoReg.name);
+
         realtimeBus.operationMode(mode);
         res.json({ success: true, mode });
     } catch (err) {
@@ -105,6 +130,39 @@ router.post(ROUTES.CYCLE_COMMAND, async (req, res) => {
         opcuaServer.markAsWritten(reg.name);
         realtimeBus.cycleCommand(command);
         res.json({ success: true, command });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parada de Emergencia (switch en la sección "Comando de Ciclo") — registro
+// dedicado "paroEmergencia" (coil, dirección Modbus 352). El front solo manda
+// 1 (activa) o 0 (inactiva); no depende del data source configurable (db/modbus)
+// porque no existe tabla de DB para esta señal — siempre pasa por Modbus.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get(ROUTES.EMERGENCY_STOP, async (req, res) => {
+    try {
+        const reg = registerManager.getAll().find(r => r.name === 'paroEmergencia');
+        const value = reg ? opcuaServer._getCachedValue(reg) : 0;
+        res.json({ active: Boolean(value) });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post(ROUTES.EMERGENCY_STOP, async (req, res) => {
+    const { active } = req.body; // boolean: true = activa, false = inactiva
+    if (typeof active !== 'boolean') return res.status(400).json({ error: 'Field "active" (boolean) is required' });
+    try {
+        const reg = registerManager.getAll().find(r => r.name === 'paroEmergencia');
+        if (!reg) return res.status(404).json({ error: 'Emergency stop register not found' });
+        if (!reg.writable) return res.status(403).json({ error: 'Emergency stop is read-only' });
+        const value = active ? 1 : 0;
+        await modbusClient.writeByConfig(reg, value);
+        opcuaServer.updateCachedValue(reg.name, value);
+        opcuaServer.markAsWritten(reg.name);
+        res.json({ success: true, active });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -3,6 +3,7 @@ const ROUTES = {
     KPIS: '/api/kpis',
     OPERATION_MODE: '/api/operation-mode',
     CYCLE_COMMAND: '/api/cycle-command',
+    EMERGENCY_STOP: '/api/emergency-stop',
     STEP_CYCLE: '/api/dashboard/step-cycle',
     PHASE_TIMING: '/api/dashboard/phase-timing',
 

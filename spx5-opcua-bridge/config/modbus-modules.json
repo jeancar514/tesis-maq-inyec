@@ -58,8 +58,8 @@
             {
               "name": "cycleCommand",
               "description": "Comando de ciclo (1: start, 0: stop)",
-              "modbusType": "coil",
-              "modbusAddress": 11,
+              "modbusType": "holdingRegister",
+              "modbusAddress": 351,
               "opcuaDataType": "Boolean",
               "scaleFactor": 1,
               "unit": "",

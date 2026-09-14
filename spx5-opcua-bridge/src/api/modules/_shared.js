@@ -43,6 +43,22 @@ function validateRegisterPatch(patch) {
     return { clean };
 }
 
+// Modo de Operación: dos registros booleanos mutuamente excluyentes
+// (operationModeManual @353, operationModeAutomatico @354), en vez de un solo
+// registro con valores 1/2. Se deriva aquí el "mode" (1|2) que sigue esperando
+// el resto del front (GET /api/operation-mode, GET /api/kpis, WS de KPIs),
+// para no tener que duplicar esta lógica en dashboard.routes.js y apiServer.js.
+function readOperationModeFromRegisters() {
+    const all = registerManager.getAll();
+    const manualReg = all.find(r => r.name === 'operationModeManual');
+    const autoReg = all.find(r => r.name === 'operationModeAutomatico');
+    const manualActive = manualReg ? Boolean(opcuaServer._getCachedValue(manualReg)) : false;
+    const autoActive = autoReg ? Boolean(opcuaServer._getCachedValue(autoReg)) : false;
+    // Automático es el valor por defecto/de reposo si ninguno está activo o si
+    // por alguna razón quedaran ambos en 1 (estado inconsistente del PLC).
+    return manualActive && !autoActive ? 1 : 2;
+}
+
 // Devuelve { nombreRegistro: valorCacheado } para un tipo de registro.
 // Los pares de 32 bits (is32Bit + bitPosition 'low'/'high') se recomponen bajo
 // su nombre base (p.ej. "moldPosicion1Low"/"moldPosicion1High" → "moldPosicion1"),
@@ -357,6 +373,7 @@ module.exports = {
     VALID_MODBUS_TYPES,
     validateRegisterPatch,
     readValuesByType,
+    readOperationModeFromRegisters,
     attachControlRoutes,
     attachControlPostRoute,
     attachMoveRoute,

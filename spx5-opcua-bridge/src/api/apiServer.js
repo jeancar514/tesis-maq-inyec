@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 const { REGISTER_TYPES } = require('./constant');
 const realtimeBus = require('./realtimeBus');
 const dbClient = require('../db/dbClient');
-const { read32BitValue } = require('./modules/_shared');
+const { read32BitValue, readOperationModeFromRegisters } = require('./modules/_shared');
 
 // Routers por módulo (espejo de los módulos del FooterNav del frontend)
 const dashboardRoutes = require('./modules/dashboard.routes');
@@ -157,9 +157,13 @@ class ApiServer {
             };
         }
         const kpiRegs = registerManager.getAll().filter(reg =>
-            [REGISTER_TYPES.KPIS, REGISTER_TYPES.CYCLE_COMMAND, REGISTER_TYPES.OPERATION_MODE].includes(reg.type));
+            [REGISTER_TYPES.KPIS, REGISTER_TYPES.CYCLE_COMMAND].includes(reg.type));
         const vals = {};
         kpiRegs.forEach(reg => { vals[reg.name] = opcuaServer._getCachedValue(reg); });
+        // operationMode ahora se deriva de dos registros mutuamente excluyentes
+        // (operationModeManual/operationModeAutomatico) en vez de leerse de un
+        // registro literal — ver readOperationModeFromRegisters en _shared.js.
+        vals.operationMode = readOperationModeFromRegisters();
         return vals;
     }
 
